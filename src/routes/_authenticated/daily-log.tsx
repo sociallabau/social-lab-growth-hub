@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader, PlaceholderCard } from "@/components/shell/page-header";
+import { PageHeader } from "@/components/shell/page-header";
+import { DailyEntryForm } from "@/components/daily-log/entry-form";
+import { DailyEntriesTable } from "@/components/daily-log/entries-table";
+import { useServiceLine } from "@/context/service-line";
 
 export const Route = createFileRoute("/_authenticated/daily-log")({
   head: () => ({
@@ -15,10 +18,12 @@ export const Route = createFileRoute("/_authenticated/daily-log")({
 });
 
 function DailyLogPage() {
+  const { serviceLineFilter } = useServiceLine();
   return (
     <>
       <PageHeader title="Daily Log" description="One row per channel per service line per day." />
-      <PlaceholderCard text="The daily log will appear here." />
+      <DailyEntryForm defaultServiceLine={serviceLineFilter} />
+      <DailyEntriesTable serviceLine={serviceLineFilter} />
     </>
   );
 }
