@@ -69,6 +69,6 @@ function parseDateInput(value: string) {
 export function parseAUDate(input: string): string | null {
   const m = input.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
-  const iso = `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const iso = `${m[3]}-${m[2]!.padStart(2, "0")}-${m[1]!.padStart(2, "0")}`;
   return new Date(`${iso}T00:00:00Z`).toISOString().slice(0, 10) === iso ? iso : null;
 }
