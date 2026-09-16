@@ -72,7 +72,7 @@ export function capacityByRole(
   const newHireHours = au ? productionHoursPerMonth({ name: "", role: null, location: "Australia" }, au) : 0;
   return roles.map((role) => {
     const team = staff.filter((s) => s.role === role && s.name);
-    const availableHours = team.reduce((sum, s) => sum + productionHoursPerMonth(s, defaults[s.location] ?? au), 0);
+    const availableHours = team.reduce((sum, s) => sum + productionHoursPerMonth(s, defaults[s.location] ?? au!), 0);
     const annualCost = team.reduce((sum, s) => sum + (Number(s.annual_cost) || 0), 0);
     const requiredHours = packages.reduce((sum, p) => sum + (Number(p.hours_by_role[role]) || 0) * volumeUsed(p, activeClientsByTier), 0);
     const plannableHours = availableHours * planCeiling;
