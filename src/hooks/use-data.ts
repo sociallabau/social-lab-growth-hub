@@ -28,6 +28,7 @@ export const queryKeys = {
   staff: ["staff"] as const,
   packages: ["packages"] as const,
   locationDefaults: ["location_defaults"] as const,
+  checkins: ["daily_checkins"] as const,
 };
 
 function unwrap<T>({ data, error }: { data: T | null; error: { message: string } | null }): T {
@@ -226,7 +227,7 @@ export function useDeleteDailyEntry() {
 }
 
 export function useSaveDailyCheckin() {
-  const invalidate = useInvalidate([queryKeys.dailyEntries]);
+  const invalidate = useInvalidate([queryKeys.dailyEntries, queryKeys.checkins]);
   return useMutation({
     mutationFn: async (row: TablesInsert<"daily_checkins">) => {
       const res = await supabase.from("daily_checkins").upsert(row, { onConflict: "date" }).select().single();
@@ -379,6 +380,37 @@ export function useSaveLocationDefaults() {
   return useMutation({
     mutationFn: async (row: TablesInsert<"location_defaults">) => {
       const res = await supabase.from("location_defaults").upsert(row, { onConflict: "location" }).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export type DailyCheckin = Tables<"daily_checkins">;
+
+export const dailyCheckinQuery = (date: string) =>
+  queryOptions({
+    queryKey: [...queryKeys.checkins, date] as const,
+    queryFn: async (): Promise<DailyCheckin | null> => {
+      const res = await supabase.from("daily_checkins").select("*").eq("date", date).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+  });
+
+export const useDailyCheckin = (date: string) => useQuery(dailyCheckinQuery(date));
+
+/** Upserts many daily entries at once on (date, channel, service line). */
+export function useSaveDailyEntries() {
+  const invalidate = useInvalidate([queryKeys.dailyEntries]);
+  return useMutation({
+    mutationFn: async (rows: TablesInsert<"daily_entries">[]) => {
+      if (!rows.length) return [];
+      const res = await supabase
+        .from("daily_entries")
+        .upsert(rows, { onConflict: "date,channel,service_line" })
+        .select();
       if (res.error) throw new Error(res.error.message);
       return res.data;
     },
