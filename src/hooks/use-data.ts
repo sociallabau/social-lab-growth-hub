@@ -167,7 +167,7 @@ export function useListValues(list: ListName) {
 // Mutations — each invalidates the queries it affects
 // ---------------------------------------------------------------------------
 
-function useInvalidate(keys: readonly readonly unknown[][]) {
+function useInvalidate(keys: readonly (readonly unknown[])[]) {
   const queryClient = useQueryClient();
   return () => keys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
 }
