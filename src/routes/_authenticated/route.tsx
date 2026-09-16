@@ -3,12 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/shell/app-shell";
 import { ServiceLineProvider } from "@/context/service-line";
 
-type AuthSearch = { service?: string };
+type AuthSearch = { service?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
-    service: typeof search.service === "string" ? search.service : undefined,
+    service: typeof search["service"] === "string" ? search["service"] : undefined,
   }),
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();

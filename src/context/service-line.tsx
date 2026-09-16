@@ -25,14 +25,15 @@ export function ServiceLineProvider({
 
   const setServiceLine = useCallback(
     (next: string) => {
-      navigate({
-        to: ".",
-        search: (prev: Record<string, unknown>) => ({
-          ...prev,
-          service: next === ALL_SERVICE_LINES ? undefined : next,
-        }),
-        replace: true,
-      });
+      const updater = (prev: Record<string, unknown>) => {
+        const search = { ...prev };
+        if (next === ALL_SERVICE_LINES) delete search["service"];
+        else search["service"] = next;
+        return search;
+      };
+      // The filter lives on any route's search params, so the generic
+      // route-aware typing of navigate() is intentionally bypassed here.
+      navigate({ to: ".", replace: true, search: updater } as never);
     },
     [navigate],
   );
