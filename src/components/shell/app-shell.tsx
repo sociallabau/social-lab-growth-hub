@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,6 +12,8 @@ import {
   Sun,
   LogOut,
   Plus,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +29,9 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useServiceLine } from "@/context/service-line";
 import { ServiceLineFilter } from "@/components/shell/service-line-filter";
-import { toast } from "sonner";
+import { LogTodayDialog } from "@/components/log-today/log-today-dialog";
+import { useDailyCheckin } from "@/hooks/use-data";
+import { todayInBrisbane, TIME_ZONE } from "@/lib/format";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -53,6 +57,14 @@ export function AppShell({
   const router = useRouter();
   const queryClient = useQueryClient();
   const search = serviceLine === "All" ? {} : { service: serviceLine };
+  const [logOpen, setLogOpen] = useState(false);
+  const today = todayInBrisbane();
+  const checkin = useDailyCheckin(today);
+  const logged = !!checkin.data;
+  const brisbaneHour = Number(
+    new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: TIME_ZONE }).format(new Date()),
+  );
+  const overdue = !logged && brisbaneHour >= 16;
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -99,12 +111,25 @@ export function AppShell({
             <ServiceLineFilter />
             <Button
               size="sm"
-              onClick={() => toast("The Log today check-in is coming soon.")}
-              className="gap-1.5"
+              onClick={() => setLogOpen(true)}
+              variant={logged ? "outline" : "default"}
+              className={
+                logged
+                  ? "gap-1.5 border-[var(--good)] text-[var(--good)]"
+                  : overdue
+                    ? "gap-1.5 bg-[var(--warning)] text-[var(--warning-foreground)] hover:bg-[var(--warning)]/90"
+                    : "gap-1.5"
+              }
             >
-              <Plus className="size-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Log today</span>
-              <span className="sr-only sm:hidden">Log today</span>
+              {logged ? (
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              ) : overdue ? (
+                <AlertTriangle className="size-4" aria-hidden="true" />
+              ) : (
+                <Plus className="size-4" aria-hidden="true" />
+              )}
+              <span className="hidden sm:inline">{logged ? "Logged" : "Log today"}</span>
+              <span className="sr-only sm:hidden">{logged ? "Logged" : "Log today"}</span>
             </Button>
             <Button
               variant="ghost"
@@ -141,6 +166,8 @@ export function AppShell({
 
         <main className="px-4 pb-24 pt-6 md:px-6 md:pb-10">{children}</main>
       </div>
+
+      <LogTodayDialog open={logOpen} onOpenChange={setLogOpen} />
 
       {/* Mobile bottom tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-background md:hidden">
