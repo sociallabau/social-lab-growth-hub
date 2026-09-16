@@ -21,7 +21,7 @@ const blank = {
   marketing_spend: 0,
 };
 
-export function DailyEntryForm({ defaultServiceLine }: { defaultServiceLine?: string }) {
+export function DailyEntryForm({ defaultServiceLine }: { defaultServiceLine?: string | undefined }) {
   const lists = useListItems();
   const save = useSaveDailyEntry();
   const [date, setDate] = useState(todayInBrisbane());
