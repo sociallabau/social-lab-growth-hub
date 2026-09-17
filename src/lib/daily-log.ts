@@ -179,3 +179,128 @@ export function sumRows(rows: RowValues[]) {
   }
   return total;
 }
+
+// ---------------------------------------------------------------------------
+// Capturing the day's enquiries and wins by hand, from the Log today dialog.
+// Each enquiry becomes a real lead so it shows on the Leads board, and each win
+// becomes a client so MRR, churn and LTV pick it up.
+// ---------------------------------------------------------------------------
+
+/** Brisbane is UTC+10 all year, so a plain date and time map to one instant. */
+export function brisbaneTimestamp(date: ISODate, time: string): string {
+  const [h = "09", m = "00"] = (time || "09:00").split(":");
+  return `${date}T${h.padStart(2, "0")}:${m.padStart(2, "0")}:00+10:00`;
+}
+
+/** hh:mm in Brisbane, for defaulting the "received at" field to now. */
+export function brisbaneTimeNow(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Australia/Brisbane",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(now);
+}
+
+export interface EnquiryDraft {
+  key: string;
+  name: string;
+  company: string;
+  channel: string;
+  service_line: string;
+  time: string;
+  replied_within_30: boolean;
+  email: string;
+  phone: string;
+  note: string;
+}
+
+export function newEnquiryDraft(channel = "", service_line = "", time = brisbaneTimeNow()): EnquiryDraft {
+  return {
+    key: `enq-${Math.random().toString(36).slice(2)}`,
+    name: "",
+    company: "",
+    channel,
+    service_line,
+    time,
+    replied_within_30: false,
+    email: "",
+    phone: "",
+    note: "",
+  };
+}
+
+export function enquiryError(draft: EnquiryDraft): string | null {
+  if (!draft.name.trim() && !draft.company.trim()) return "Add a name or a company";
+  if (!draft.channel) return "Choose a channel for each enquiry";
+  if (!draft.service_line) return "Choose a service line for each enquiry";
+  if (!/^\d{1,2}:\d{2}$/.test(draft.time)) return "Enter the time as hh:mm";
+  return null;
+}
+
+/** The row written to public.leads. Replied within 30 min sets the response time. */
+export function enquiryToLead(draft: EnquiryDraft, date: ISODate) {
+  const receivedAt = brisbaneTimestamp(date, draft.time);
+  return {
+    source: "manual",
+    status: "new",
+    received_at: receivedAt,
+    name: draft.name.trim() || null,
+    company: draft.company.trim() || null,
+    email: draft.email.trim().toLowerCase() || null,
+    phone: draft.phone.trim() || null,
+    channel: draft.channel,
+    service_line: draft.service_line,
+    message: draft.note.trim() || null,
+    // Logged as answered inside 30 minutes, so count it from 15 minutes after it arrived.
+    first_response_at: draft.replied_within_30
+      ? new Date(new Date(receivedAt).getTime() + 15 * 60_000).toISOString()
+      : null,
+  };
+}
+
+export interface WinDraft {
+  lead_id: string | null;
+  client_name: string;
+  monthly_fee: number;
+  tier: string;
+  service_line: string;
+  channel: string;
+}
+
+export function winError(win: WinDraft): string | null {
+  if (!win.client_name.trim()) return "Add the client name";
+  if (!(Number(win.monthly_fee) > 0)) return "Add the monthly fee";
+  if (!win.service_line) return "Choose a service line";
+  if (!win.channel) return "Choose the lead channel";
+  return null;
+}
+
+export function winToClient(win: WinDraft, date: ISODate) {
+  return {
+    name: win.client_name.trim(),
+    service_line: win.service_line,
+    tier: win.tier || null,
+    lead_channel: win.channel,
+    start_date: date,
+    monthly_fee: Number(win.monthly_fee),
+    lead_id: win.lead_id,
+  };
+}
+
+/** Adds a win to the day's grid, on its channel and service line row. */
+export function applyWinToRows(rows: DraftRow[], win: { channel: string; service_line: string; monthly_fee: number }): DraftRow[] {
+  const key = `${win.channel}|||${win.service_line}`;
+  const existing = rows.find((r) => `${r.channel}|||${r.service_line}` === key);
+  if (existing) {
+    return rows.map((r) =>
+      r === existing
+        ? { ...r, clients_won: r.clients_won + 1, value_won_monthly: r.value_won_monthly + Number(win.monthly_fee) }
+        : r,
+    );
+  }
+  const row = newDraftRow(win.channel, win.service_line);
+  row.clients_won = 1;
+  row.value_won_monthly = Number(win.monthly_fee);
+  return [...rows, row];
+}

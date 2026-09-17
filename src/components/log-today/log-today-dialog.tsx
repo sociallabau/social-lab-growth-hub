@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Instagram, Mail, Plus, Sparkles, Globe, CalendarClock } from "lucide-react";
+import { Check, Copy, Instagram, Mail, Plus, Sparkles, Globe, CalendarClock, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -17,9 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NumberInput } from "@/components/daily-log/number-input";
 import {
+  useCreateClient,
+  useCreateLead,
   useDailyEntries,
   useListItems,
   useMetaAds,
@@ -31,13 +34,22 @@ import {
   type Lead,
 } from "@/hooks/use-data";
 import {
+  applyWinToRows,
   brisbaneDate,
+  brisbaneTimestamp,
+  enquiryError,
+  enquiryToLead,
   newDraftRow,
+  newEnquiryDraft,
   prefillFromCrm,
   rowError,
   sumRows,
+  winError,
+  winToClient,
   type AutoField,
   type DraftRow,
+  type EnquiryDraft,
+  type WinDraft,
 } from "@/lib/daily-log";
 import { formatDateTime, formatMoney, formatPercent, todayInBrisbane } from "@/lib/format";
 
@@ -61,6 +73,8 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   const entries = useDailyEntries({ from: date, to: date });
   const metaAds = useMetaAds({ from: date, to: date });
   const updateLead = useUpdateLead();
+  const createLead = useCreateLead();
+  const createClient = useCreateClient();
   const saveEntries = useSaveDailyEntries();
   const saveCheckin = useSaveDailyCheckin();
 
@@ -68,6 +82,9 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const [meetingAnswers, setMeetingAnswers] = useState<Record<string, "yes" | "no">>({});
   const [rows, setRows] = useState<DraftRow[]>([]);
+  const [enquiries, setEnquiries] = useState<EnquiryDraft[]>([]);
+  const [win, setWin] = useState<WinDraft | null>(null);
+  const [winsRecorded, setWinsRecorded] = useState<string[]>([]);
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const [highlights, setHighlights] = useState("");
   const [blockers, setBlockers] = useState("");
@@ -87,6 +104,9 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
       setDecisions({});
       setMeetingAnswers({});
       setRows([]);
+      setEnquiries([]);
+      setWin(null);
+      setWinsRecorded([]);
       setSeededFor(null);
       setHighlights("");
       setBlockers("");
@@ -172,16 +192,63 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     }
   }
 
+  async function saveEnquiries() {
+    for (const draft of enquiries) {
+      await createLead.mutateAsync(enquiryToLead(draft, date));
+    }
+    setEnquiries([]);
+  }
+
   async function goToStep2() {
     if (!inboxComplete) return;
+    const badEnquiry = enquiries.map((e) => enquiryError(e)).find((m) => m);
+    if (badEnquiry) {
+      toast.error(badEnquiry);
+      return;
+    }
     try {
       setSaving(true);
       await applyInbox();
+      await saveEnquiries();
       await leads.refetch();
       setSeededFor(null);
       setStep(2);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save the inbox decisions");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const openLeads = useMemo(
+    () => (leads.data ?? []).filter((l) => !["pending", "rejected", "won", "lost"].includes(l.status)),
+    [leads.data],
+  );
+
+  async function recordWin() {
+    if (!win) return;
+    const problem = winError(win);
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
+    try {
+      setSaving(true);
+      const wonAt = brisbaneTimestamp(date, "17:00");
+      if (win.lead_id) {
+        await updateLead.mutateAsync({
+          id: win.lead_id,
+          patch: { status: "won", won_at: wonAt, won_value: Number(win.monthly_fee), channel: win.channel, service_line: win.service_line },
+        });
+      }
+      await createClient.mutateAsync(winToClient(win, date));
+      setRows((prev) => applyWinToRows(prev, win));
+      setWinsRecorded((prev) => [...prev, `${win.client_name.trim()} · ${formatMoney(Number(win.monthly_fee))}/mo`]);
+      setWin(null);
+      await leads.refetch();
+      toast.success("Client added");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not record the win");
     } finally {
       setSaving(false);
     }
@@ -259,18 +326,169 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
           <DialogTitle>Log today · step {step} of 3</DialogTitle>
           <DialogDescription>
             {step === 1
-              ? "Clear the inbox: decide on every new enquiry."
+              ? "Log every enquiry that came in today, and clear anything waiting for review."
               : step === 2
-                ? "Check today's numbers. Prefilled cells are marked auto."
+                ? "Check today's numbers and record anyone who signed. Prefilled cells are marked auto."
                 : "Wrap up with highlights, blockers and today's totals."}
           </DialogDescription>
         </DialogHeader>
 
         {step === 1 ? (
           <div className="space-y-4">
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-medium">Today&rsquo;s enquiries</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Every call, DM, email or referral. Each one becomes a lead on the Leads board.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() =>
+                    setEnquiries((prev) => {
+                      const last = prev[prev.length - 1];
+                      return [...prev, newEnquiryDraft(last?.channel ?? "", last?.service_line ?? "")];
+                    })
+                  }
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Add enquiry
+                </Button>
+              </div>
+
+              {enquiries.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  No enquiries logged yet for {date}. Add them as they come in, or all at once now.
+                </p>
+              ) : null}
+
+              <div className="mt-3 space-y-3">
+                {enquiries.map((draft) => {
+                  const update = (patch: Partial<EnquiryDraft>) =>
+                    setEnquiries((prev) => prev.map((e) => (e.key === draft.key ? { ...e, ...patch } : e)));
+                  return (
+                    <div key={draft.key} className="rounded-md border border-border/70 bg-muted/30 p-3">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`name-${draft.key}`}>Name</Label>
+                          <Input
+                            id={`name-${draft.key}`}
+                            value={draft.name}
+                            placeholder="Who got in touch"
+                            onChange={(e) => update({ name: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`company-${draft.key}`}>Company</Label>
+                          <Input
+                            id={`company-${draft.key}`}
+                            value={draft.company}
+                            onChange={(e) => update({ company: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label>Channel</Label>
+                          <Select value={draft.channel} onValueChange={(value) => update({ channel: value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Where from" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(lists.data?.channel ?? []).map((c) => (
+                                <SelectItem key={c.id} value={c.value}>
+                                  {c.value}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label>Service line</Label>
+                          <Select value={draft.service_line} onValueChange={(value) => update({ service_line: value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="What for" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(lists.data?.service_line ?? []).map((sl) => (
+                                <SelectItem key={sl.id} value={sl.value}>
+                                  {sl.value}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`time-${draft.key}`}>Came in at</Label>
+                          <Input
+                            id={`time-${draft.key}`}
+                            type="time"
+                            value={draft.time}
+                            onChange={(e) => update({ time: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`email-${draft.key}`}>Email</Label>
+                          <Input
+                            id={`email-${draft.key}`}
+                            type="email"
+                            value={draft.email}
+                            onChange={(e) => update({ email: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`phone-${draft.key}`}>Phone</Label>
+                          <Input
+                            id={`phone-${draft.key}`}
+                            value={draft.phone}
+                            onChange={(e) => update({ phone: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor={`note-${draft.key}`}>Note</Label>
+                          <Input
+                            id={`note-${draft.key}`}
+                            value={draft.note}
+                            placeholder="What they asked for"
+                            onChange={(e) => update({ note: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`replied-${draft.key}`}
+                            checked={draft.replied_within_30}
+                            onCheckedChange={(checked) => update({ replied_within_30: checked })}
+                          />
+                          <Label htmlFor={`replied-${draft.key}`} className="font-normal">
+                            Replied within 30 minutes
+                          </Label>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="ml-auto gap-1.5 text-muted-foreground"
+                          onClick={() => setEnquiries((prev) => prev.filter((e) => e.key !== draft.key))}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {pending.length === 0 ? (
               <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Nothing waiting in the inbox.
+                Nothing waiting for review in the inbox.
               </p>
             ) : null}
             {pending.map((lead) => {
@@ -540,6 +758,161 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               <Plus className="size-4" aria-hidden="true" />
               Add a row
             </Button>
+
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="flex items-center gap-1.5 text-sm font-medium">
+                    <Trophy className="size-4 text-[var(--good)]" aria-hidden="true" />
+                    Did anyone sign today?
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Recording a win marks the lead won and creates the client, so MRR and churn stay right.
+                  </p>
+                </div>
+                {win === null ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() =>
+                      setWin({
+                        lead_id: null,
+                        client_name: "",
+                        monthly_fee: 0,
+                        tier: "",
+                        service_line: "",
+                        channel: "",
+                      })
+                    }
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    Add a win
+                  </Button>
+                ) : null}
+              </div>
+
+              {winsRecorded.length ? (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {winsRecorded.map((w) => (
+                    <li key={w} className="flex items-center gap-1.5">
+                      <Check className="size-4 text-[var(--good)]" aria-hidden="true" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {win ? (
+                <div className="mt-3 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-1.5">
+                      <Label>Which lead?</Label>
+                      <Select
+                        value={win.lead_id ?? "new"}
+                        onValueChange={(value) => {
+                          const lead = openLeads.find((l) => l.id === value);
+                          setWin({
+                            ...win,
+                            lead_id: value === "new" ? null : value,
+                            client_name: lead ? (lead.company ?? lead.name ?? "") : win.client_name,
+                            channel: lead?.channel ?? win.channel,
+                            service_line: lead?.service_line ?? win.service_line,
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a lead" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Not in the CRM</SelectItem>
+                          {openLeads.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.company ?? l.name ?? "Unnamed lead"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="win-client">Client name</Label>
+                      <Input
+                        id="win-client"
+                        value={win.client_name}
+                        onChange={(e) => setWin({ ...win, client_name: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="win-fee">Monthly fee</Label>
+                      <NumberInput
+                        label="Monthly fee"
+                        step={50}
+                        value={win.monthly_fee}
+                        onChange={(v) => setWin({ ...win, monthly_fee: v })}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label>Tier</Label>
+                      <Select value={win.tier} onValueChange={(value) => setWin({ ...win, tier: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(lists.data?.tier ?? []).map((t) => (
+                            <SelectItem key={t.id} value={t.value}>
+                              {t.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label>Service line</Label>
+                      <Select
+                        value={win.service_line}
+                        onValueChange={(value) => setWin({ ...win, service_line: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Service line" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(lists.data?.service_line ?? []).map((sl) => (
+                            <SelectItem key={sl.id} value={sl.value}>
+                              {sl.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label>Lead channel</Label>
+                      <Select value={win.channel} onValueChange={(value) => setWin({ ...win, channel: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Where they came from" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(lists.data?.channel ?? []).map((c) => (
+                            <SelectItem key={c.id} value={c.value}>
+                              {c.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={recordWin} disabled={saving}>
+                      {saving ? "Saving…" : "Record win"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setWin(null)} disabled={saving}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -592,7 +965,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               {saving ? "Saving…" : "Continue"}
             </Button>
           ) : step === 2 ? (
-            <Button onClick={() => setStep(3)} disabled={rows.length === 0}>
+            <Button onClick={() => setStep(3)} disabled={saving}>
               Continue
             </Button>
           ) : (

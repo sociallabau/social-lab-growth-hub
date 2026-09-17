@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell/page-header";
+import { LogTodayDialog } from "@/components/log-today/log-today-dialog";
+import { useDailyCheckins } from "@/hooks/use-data";
+import { todayInBrisbane } from "@/lib/format";
 import { DailyEntryForm } from "@/components/daily-log/entry-form";
 import { DailyEntriesTable } from "@/components/daily-log/entries-table";
 import { useServiceLine } from "@/context/service-line";
@@ -19,11 +23,24 @@ export const Route = createFileRoute("/_authenticated/daily-log")({
 
 function DailyLogPage() {
   const { serviceLineFilter } = useServiceLine();
+  const today = todayInBrisbane();
+  const checkins = useDailyCheckins({ from: today, to: today });
+  const [logOpen, setLogOpen] = useState(false);
+  const [offered, setOffered] = useState(false);
+
+  // Opening the Daily Log is the cue to do the check-in, so offer it once per visit.
+  useEffect(() => {
+    if (offered || checkins.isLoading) return;
+    setOffered(true);
+    if (!(checkins.data ?? []).some((c) => c.date === today)) setLogOpen(true);
+  }, [offered, checkins.isLoading, checkins.data, today]);
+
   return (
     <>
       <PageHeader title="Daily Log" description="One row per channel per service line per day." />
       <DailyEntryForm defaultServiceLine={serviceLineFilter} />
       <DailyEntriesTable serviceLine={serviceLineFilter} />
+      <LogTodayDialog open={logOpen} onOpenChange={setLogOpen} />
     </>
   );
 }
