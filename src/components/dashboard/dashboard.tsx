@@ -141,7 +141,7 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
     <div className="space-y-10">
       <section className="flex flex-col gap-4 rounded-lg border bg-card p-4 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
-          {dashboard.checkinDays.map((day) => <div key={day.date} title={`${formatDate(day.date)} · ${day.state}`} aria-label={`${formatDate(day.date)} ${day.state}`} className={cn("size-7 shrink-0 rounded-sm border", day.state === "logged" ? "border-good bg-good" : day.state === "weekend" ? "border-muted bg-muted" : "border-critical/40 bg-critical-soft")} />)}
+          {dashboard.checkinDays.map((day) => <div key={day.date} title={`${formatDate(day.date)} · ${day.state}`} aria-label={`${formatDate(day.date)} ${day.state}`} className={cn("size-7 shrink-0 rounded-sm border", day.state === "logged" ? "border-good bg-good" : day.state === "weekend" ? "border-border bg-muted" : "border-foreground/30 bg-transparent")} />)}
         </div>
         <div className="flex items-center justify-between gap-4 lg:justify-end"><div><p className="text-xs text-muted-foreground">Current streak</p><p className="font-semibold">{dashboard.streak} working day{dashboard.streak === 1 ? "" : "s"}</p></div><Button onClick={openLogToday}>Log today</Button></div>
       </section>
