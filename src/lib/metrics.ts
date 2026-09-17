@@ -490,3 +490,50 @@ export function metaAdsSummary(rows: MetaAdsRow[], today: ISODate) {
     }),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Client hours and scope
+// ---------------------------------------------------------------------------
+
+const WEEKS_PER_MONTH = 52 / 12;
+
+/** Total hours a package plans across every role. */
+export function packageTotalHours(hoursByRole: Record<string, unknown> | null | undefined): number {
+  if (!hoursByRole) return 0;
+  return Object.values(hoursByRole).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
+}
+
+/** Amber "Review due" once the last scope review is more than 90 days old. */
+export function scopeReviewDue(lastScopeReview: ISODate | null | undefined, today: ISODate): boolean {
+  return !lastScopeReview || lastScopeReview < addDays(today, -90);
+}
+
+export interface ClientHourRow {
+  date: ISODate;
+  hours: number | string | null;
+}
+
+export function clientHoursSummary(
+  rows: ClientHourRow[],
+  today: ISODate,
+  monthlyFee: number | null | undefined,
+  packageHoursPerMonth: number | null,
+) {
+  const from = addDays(today, -27);
+  const last4Weeks = rows
+    .filter((row) => row.date >= from && row.date <= today)
+    .reduce((sum, row) => sum + (Number(row.hours) || 0), 0);
+  const hoursPerMonth = (last4Weeks / 4) * WEEKS_PER_MONTH;
+  const overByPerWeek =
+    packageHoursPerMonth && packageHoursPerMonth > 0
+      ? (hoursPerMonth - packageHoursPerMonth) / WEEKS_PER_MONTH
+      : 0;
+  return {
+    last4Weeks,
+    hoursPerMonth,
+    feePerHour: div(Number(monthlyFee) || 0, hoursPerMonth),
+    packageHoursPerMonth,
+    overByPerWeek,
+    overScope: overByPerWeek >= 5,
+  };
+}
