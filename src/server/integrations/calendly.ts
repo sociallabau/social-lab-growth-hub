@@ -16,12 +16,12 @@ export interface CalendlyInvitee {
 /** Calendly signs each webhook: header "t=<unix>,v1=<hmac sha256 of `t.body`>". */
 export async function verifyCalendlySignature(header: string | null, body: string, signingKey: string): Promise<void> {
   const parts = Object.fromEntries((header ?? "").split(",").map((p) => p.split("=") as [string, string]));
-  if (!parts.t || !parts.v1) throw new Error("Missing Calendly signature");
-  if (Math.abs(Date.now() / 1000 - Number(parts.t)) > 300) throw new Error("Stale Calendly signature");
+  if (!parts['t'] || !parts['v1']) throw new Error("Missing Calendly signature");
+  if (Math.abs(Date.now() / 1000 - Number(parts['t'])) > 300) throw new Error("Stale Calendly signature");
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(signingKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${parts.t}.${body}`));
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${parts['t']}.${body}`));
   const hex = [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  if (hex !== parts.v1) throw new Error("Bad Calendly signature");
+  if (hex !== parts['v1']) throw new Error("Bad Calendly signature");
 }
 
 const answerTo = (qa: CalendlyInvitee["questions_and_answers"], pattern: RegExp) =>

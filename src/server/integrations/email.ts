@@ -7,7 +7,7 @@ import { parseMessage } from "./mime";
 import { classifyEnquiry, env, getState, recordRun, setState, type SyncResult } from "./shared";
 
 interface Cursor {
-  uidValidity?: string;
+  uidValidity?: string | undefined;
   lastUid: number;
 }
 

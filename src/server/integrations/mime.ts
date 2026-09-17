@@ -14,7 +14,7 @@ export interface MailHeaders {
 export function headerValue(raw: string, name: string): string | null {
   const unfolded = raw.replace(/\r?\n[ \t]+/g, " ");
   const match = unfolded.match(new RegExp(`^${name}:\\s*(.*)$`, "im"));
-  return match ? match[1].trim() : null;
+  return match ? match[1]!.trim() : null;
 }
 
 export function parseHeaders(raw: string): MailHeaders {

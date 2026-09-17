@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader, PlaceholderCard } from "@/components/shell/page-header";
+import { PageHeader } from "@/components/shell/page-header";
+import { LeadsPage as LeadsCrm } from "@/components/leads/leads-page";
 
 export const Route = createFileRoute("/_authenticated/leads")({
   head: () => ({
@@ -11,14 +12,14 @@ export const Route = createFileRoute("/_authenticated/leads")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: LeadsPage,
+  component: LeadsRoute,
 });
 
-function LeadsPage() {
+function LeadsRoute() {
   return (
     <>
-      <PageHeader title="Leads" description="Enquiries, inbox approvals and the pipeline." />
-      <PlaceholderCard text="The leads pipeline will appear here." />
+      <PageHeader title="Leads" description="Board and table views of the pipeline. New enquiries are reviewed in Log today." />
+      <LeadsCrm />
     </>
   );
 }
