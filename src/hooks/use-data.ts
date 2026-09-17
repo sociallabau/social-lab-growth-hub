@@ -429,3 +429,46 @@ export function useSaveDailyEntries() {
     onSuccess: invalidate,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Clients page: stats view + hours
+// ---------------------------------------------------------------------------
+
+export type ClientWithStats = Tables<"clients_with_stats">;
+export type ClientHour = Tables<"client_hours">;
+
+export const clientsWithStatsQuery = () =>
+  queryOptions({
+    queryKey: [...queryKeys.clients, "with_stats"] as const,
+    queryFn: async (): Promise<ClientWithStats[]> =>
+      unwrap<ClientWithStats[]>(await supabase.from("clients_with_stats").select("*").order("name")),
+  });
+
+export const useClientsWithStats = () => useQuery(clientsWithStatsQuery());
+
+export const clientHoursQuery = (clientId: string | null) =>
+  queryOptions({
+    queryKey: ["client_hours", clientId] as const,
+    enabled: !!clientId,
+    queryFn: async (): Promise<ClientHour[]> =>
+      unwrap<ClientHour[]>(
+        await supabase.from("client_hours").select("*").eq("client_id", clientId!).order("date", { ascending: false }),
+      ),
+  });
+
+export const useClientHours = (clientId: string | null) => useQuery(clientHoursQuery(clientId));
+
+export function useLogClientHours() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (row: TablesInsert<"client_hours">) => {
+      const res = await supabase.from("client_hours").insert(row).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: (row) => {
+      queryClient.invalidateQueries({ queryKey: ["client_hours", row.client_id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+    },
+  });
+}
