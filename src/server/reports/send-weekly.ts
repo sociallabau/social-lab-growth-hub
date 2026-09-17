@@ -45,6 +45,56 @@ export async function buildWeekly(db: SupabaseClient, options: WeeklyOptions = {
   return { report, recipients, weekStart, weekEnd };
 }
 
+interface Email {
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+}
+
+/**
+ * Sends through whichever transport is configured: the Gmail relay (an Apps
+ * Script in our own Google account, see docs/gmail-relay.gs) or Resend.
+ */
+async function deliver(email: Email): Promise<string> {
+  const relayUrl = process.env["GMAIL_RELAY_URL"]?.trim();
+  if (relayUrl) {
+    const res = await fetch(relayUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Apps Script answers the redirect with the JSON body
+      redirect: "follow",
+      body: JSON.stringify({
+        secret: env("GMAIL_RELAY_SECRET"),
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        fromName: process.env["REPORT_FROM_NAME"]?.trim() || "Social Lab Growth Hub",
+      }),
+    });
+    const raw = await res.text();
+    let body: { ok?: boolean; error?: string } = {};
+    try {
+      body = JSON.parse(raw) as typeof body;
+    } catch {
+      throw new Error(`Gmail relay returned something unexpected: ${raw.slice(0, 200)}`);
+    }
+    if (!res.ok || body.ok === false) throw new Error(`Gmail relay: ${body.error ?? res.status}`);
+    return "Gmail";
+  }
+
+  const apiKey = env("RESEND_API_KEY");
+  const from = env("REPORT_FROM_EMAIL");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: email.to, subject: email.subject, html: email.html, text: email.text }),
+  });
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  return "Resend";
+}
+
 export async function sendWeeklyReport(db: SupabaseClient, options: WeeklyOptions = {}): Promise<SyncResult & { subject: string; html?: string }> {
   const { report, recipients, weekStart } = await buildWeekly(db, options);
   if (options.preview) {
@@ -54,15 +104,8 @@ export async function sendWeeklyReport(db: SupabaseClient, options: WeeklyOption
   return {
     ...(await recordRun(db, "weekly_report", async () => {
       if (!recipients.length) throw new Error("No active team members to send to");
-      const apiKey = env("RESEND_API_KEY");
-      const from = env("REPORT_FROM_EMAIL");
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: recipients, subject: report.subject, html: report.html, text: report.text }),
-      });
-      if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      return { items: recipients.length, message: `Sent to ${recipients.join(", ")}` };
+      const via = await deliver({ to: recipients, subject: report.subject, html: report.html, text: report.text });
+      return { items: recipients.length, message: `Sent via ${via} to ${recipients.join(", ")}` };
     })),
     subject: report.subject,
   };

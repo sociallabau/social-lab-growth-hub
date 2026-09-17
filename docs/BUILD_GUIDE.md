@@ -199,8 +199,8 @@ Add each value in **Lovable Cloud > Secrets**, then use Settings > Integrations 
 | `CALENDLY_TOKEN` | Calendly > Integrations > API & Webhooks > Personal access token (needs a paid Calendly plan for webhooks) |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | Any long random string, then press "Register webhook" in Settings |
 | `LOVABLE_API_KEY` | Provided by Lovable Cloud when AI is enabled. Without it, enquiries are triaged by keywords instead |
-| `RESEND_API_KEY` | resend.com > API keys. Free tier covers 3,000 emails a month, far more than one Monday email |
-| `REPORT_FROM_EMAIL` | The from address, e.g. `Social Lab Growth Hub <hub@sociallab.com.au>`. The domain must be verified in Resend first |
+| `GMAIL_RELAY_URL`, `GMAIL_RELAY_SECRET` | To send the Monday email from your own Gmail. Follow the setup notes at the top of `docs/gmail-relay.gs` |
+| `RESEND_API_KEY`, `REPORT_FROM_EMAIL` | The alternative to Gmail: resend.com, which needs the domain verified with DNS records. Only used when `GMAIL_RELAY_URL` is not set |
 | `APP_URL` | `https://social-lab-growth-hub.lovable.app`, so the email's "Open the dashboard" button works |
 
 The scheduled runs authenticate with Lovable's own `LOVABLE_CRON_SECRET`, so there's nothing extra to set for those.
