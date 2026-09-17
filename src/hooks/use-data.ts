@@ -531,3 +531,140 @@ export function useLeadChange() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Settings page: full lists (including inactive), team members, admin check
+// ---------------------------------------------------------------------------
+
+export const allListItemsQuery = () =>
+  queryOptions({
+    queryKey: [...queryKeys.listItems, "all"] as const,
+    queryFn: async (): Promise<ListItem[]> =>
+      unwrap<ListItem[]>(await supabase.from("list_items").select("*").order("list").order("sort_order")),
+  });
+
+export const useAllListItems = () => useQuery(allListItemsQuery());
+
+function useInvalidateLists() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: queryKeys.listItems });
+}
+
+export function useCreateListItem() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: async (row: TablesInsert<"list_items">) => {
+      const res = await supabase.from("list_items").insert(row).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateListItem() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"list_items"> }) => {
+      const res = await supabase.from("list_items").update(patch).eq("id", id).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/** Writes new sort_order values for a whole list after a drag. */
+export function useReorderListItems() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: async (items: { id: string; sort_order: number }[]) => {
+      for (const item of items) {
+        const res = await supabase.from("list_items").update({ sort_order: item.sort_order }).eq("id", item.id);
+        if (res.error) throw new Error(res.error.message);
+      }
+      return items;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export const allTeamMembersQuery = () =>
+  queryOptions({
+    queryKey: ["team_members", "all"] as const,
+    queryFn: async (): Promise<TeamMember[]> =>
+      unwrap<TeamMember[]>(await supabase.from("team_members").select("*").order("email")),
+  });
+
+export const useAllTeamMembers = () => useQuery(allTeamMembersQuery());
+
+export const useIsTeamAdmin = () =>
+  useQuery({
+    queryKey: ["is_team_admin"] as const,
+    queryFn: async (): Promise<boolean> => {
+      const res = await supabase.rpc("is_team_admin");
+      if (res.error) throw new Error(res.error.message);
+      return res.data === true;
+    },
+  });
+
+function useInvalidateTeam() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: ["team_members"] });
+}
+
+export function useSaveTeamMember() {
+  const invalidate = useInvalidateTeam();
+  return useMutation({
+    mutationFn: async (row: TablesInsert<"team_members">) => {
+      const res = await supabase
+        .from("team_members")
+        .upsert({ ...row, email: row.email.toLowerCase().trim() }, { onConflict: "email" })
+        .select()
+        .single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateTeamMember() {
+  const invalidate = useInvalidateTeam();
+  return useMutation({
+    mutationFn: async ({ email, patch }: { email: string; patch: TablesUpdate<"team_members"> }) => {
+      const res = await supabase.from("team_members").update(patch).eq("email", email).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/** POSTs to an integration route with the signed-in user's token attached. */
+export function useRunIntegration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (path: string): Promise<{ ok: boolean; message: string; items?: number }> => {
+      const { data } = await supabase.auth.getSession();
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+      });
+      const text = await res.text();
+      let body: { ok?: boolean; message?: string; items?: number } = {};
+      try {
+        body = JSON.parse(text) as typeof body;
+      } catch {
+        body = { message: text };
+      }
+      if (!res.ok || body.ok === false) throw new Error(body.message || `Failed (${res.status})`);
+      return { ok: true, message: body.message ?? "Done", items: body.items };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrationRuns });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads });
+      queryClient.invalidateQueries({ queryKey: queryKeys.metaAds });
+    },
+  });
+}
