@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/calendly/register")({
         return runIntegration(request, async () => {
           const { registerCalendlyWebhook } = await import("@/server/integrations/calendly");
           const origin = new URL(request.url).origin;
-          const result = await registerCalendlyWebhook(`${origin}/api/public/calendly/webhook`);
+          const result = await registerCalendlyWebhook(`${origin}/api/calendly/webhook`);
           return {
             items: 1,
             message: result.alreadyRegistered
