@@ -472,3 +472,62 @@ export function useLogClientHours() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Leads page: activities + team members
+// ---------------------------------------------------------------------------
+
+export type LeadActivity = Tables<"lead_activities">;
+export type TeamMember = Tables<"team_members">;
+
+export const leadActivitiesQuery = (leadId: string | null) =>
+  queryOptions({
+    queryKey: ["lead_activities", leadId] as const,
+    enabled: !!leadId,
+    queryFn: async (): Promise<LeadActivity[]> =>
+      unwrap<LeadActivity[]>(
+        await supabase.from("lead_activities").select("*").eq("lead_id", leadId!).order("at", { ascending: false }),
+      ),
+  });
+
+export const useLeadActivities = (leadId: string | null) => useQuery(leadActivitiesQuery(leadId));
+
+export const teamMembersQuery = () =>
+  queryOptions({
+    queryKey: ["team_members"] as const,
+    queryFn: async (): Promise<TeamMember[]> =>
+      unwrap<TeamMember[]>(await supabase.from("team_members").select("*").eq("active", true).order("email")),
+  });
+
+export const useTeamMembers = () => useQuery(teamMembersQuery());
+
+/** Updates a lead and always records a lead_activities row for the change. */
+export function useLeadChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+      activity,
+    }: {
+      id: string;
+      patch: TablesUpdate<"leads">;
+      activity?: { kind: string; body: string };
+    }) => {
+      const res = await supabase.from("leads").update(patch).eq("id", id).select().single();
+      if (res.error) throw new Error(res.error.message);
+      if (activity) {
+        const act = await supabase
+          .from("lead_activities")
+          .insert({ lead_id: id, kind: activity.kind, body: activity.body });
+        if (act.error) throw new Error(act.error.message);
+      }
+      return res.data;
+    },
+    onSuccess: (row) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads });
+      queryClient.invalidateQueries({ queryKey: ["lead_activities", row.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+    },
+  });
+}
