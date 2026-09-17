@@ -6,7 +6,11 @@ import { createClient } from "@supabase/supabase-js";
 async function isCronRequest(request: Request) {
   const { authenticateCronRequest } = await import("@/integrations/supabase/cron-auth");
   const failure = await authenticateCronRequest(request);
-  return failure === null;
+  if (failure === null) return true;
+  // Scheduled jobs in the database call these routes with this shared key.
+  const scheduled = process.env["CRON_SYNC_SECRET"];
+  const token = /^Bearer ([^\s,]+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
+  return Boolean(scheduled && token && token === scheduled);
 }
 
 async function isTeamMember(request: Request) {
