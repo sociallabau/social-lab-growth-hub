@@ -137,8 +137,12 @@ Deno.test("dashboard pipeline, clients and Meta summaries", () => {
   ], now, "2026-09-17");
   assertEquals(pipeline.pending, 1);
   assertEquals(pipeline.medianResponseMinutes, 10);
-  const summary = clientSummary([{ name: "A", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 3000, end_date: null, last_scope_review: null }], "2026-09-17");
-  assertEquals(summary.mrr, 3000);
-  assertEquals(summary.overdueScopeReviews.length, 1);
+  const summary = clientSummary([
+    { name: "A", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 3000, end_date: null, last_scope_review: null },
+    { name: "B", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 2000, end_date: null, last_scope_review: "2026-05-01" },
+  ], "2026-09-17");
+  assertEquals(summary.mrr, 5000);
+  // Never reviewed is not overdue; only B, reviewed over 90 days ago, is chased
+  assertEquals(summary.overdueScopeReviews.map((c) => c.name), ["B"]);
   assertEquals(metaAdsSummary([{ date: "2026-09-17", spend: 100, leads: 2, schedules: 1 }], "2026-09-17").costPerLead, 50);
 });

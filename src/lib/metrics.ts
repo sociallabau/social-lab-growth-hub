@@ -455,9 +455,7 @@ export function clientSummary<T extends Client & { last_scope_review?: ISODate |
     mrr,
     averageFee: div(mrr, active.length),
     bottomThirty: bottomThirtyPercent(active, today),
-    overdueScopeReviews: active.filter(
-      (client) => !client.last_scope_review || client.last_scope_review < addDays(today, -90),
-    ),
+    overdueScopeReviews: active.filter((client) => scopeReviewDue(client.last_scope_review, today)),
   };
 }
 
@@ -502,9 +500,13 @@ export function packageTotalHours(hoursByRole: Record<string, unknown> | null | 
   return Object.values(hoursByRole).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
 }
 
-/** Amber "Review due" once the last scope review is more than 90 days old. */
+/**
+ * Amber "Review due" once a scope review is more than 90 days old. A client who
+ * has never been reviewed is not flagged: the clock starts at the first review,
+ * so we are not nagged about every client the day we start tracking.
+ */
 export function scopeReviewDue(lastScopeReview: ISODate | null | undefined, today: ISODate): boolean {
-  return !lastScopeReview || lastScopeReview < addDays(today, -90);
+  return Boolean(lastScopeReview) && lastScopeReview! < addDays(today, -90);
 }
 
 export interface ClientHourRow {

@@ -101,3 +101,11 @@ Deno.test("tier economics: logged hours win, and reveal the tier eating the most
   assertEquals(tier3.marginPct < 0.05, true); // basically working for nothing
   assertEquals(weakestTier(rows)!.tier, "Tier 3");
 });
+
+Deno.test("scope reviews only nag once a review has actually happened", async () => {
+  const { scopeReviewDue } = await import("../src/lib/metrics.ts");
+  assertEquals(scopeReviewDue(null, "2026-09-17"), false); // never reviewed: no flag
+  assertEquals(scopeReviewDue(undefined, "2026-09-17"), false);
+  assertEquals(scopeReviewDue("2026-09-01", "2026-09-17"), false); // reviewed recently
+  assertEquals(scopeReviewDue("2026-05-01", "2026-09-17"), true); // over 90 days
+});
