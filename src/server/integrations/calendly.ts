@@ -15,6 +15,8 @@ export interface CalendlyInvitee {
 
 /** Calendly signs each webhook: header "t=<unix>,v1=<hmac sha256 of `t.body`>". */
 export async function verifyCalendlySignature(header: string | null, body: string, signingKey: string): Promise<void> {
+  // Without a configured key an empty-key HMAC would be forgeable, so fail closed.
+  if (!signingKey) throw new Error("Calendly signing key is not configured");
   const parts = Object.fromEntries((header ?? "").split(",").map((p) => p.split("=") as [string, string]));
   if (!parts['t'] || !parts['v1']) throw new Error("Missing Calendly signature");
   if (Math.abs(Date.now() / 1000 - Number(parts['t'])) > 300) throw new Error("Stale Calendly signature");

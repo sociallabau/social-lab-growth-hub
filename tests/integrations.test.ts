@@ -176,6 +176,14 @@ Deno.test("Calendly: signature must match and be recent", async () => {
 
   await verifyCalendlySignature(`t=${t},v1=${hex}`, body, key); // valid: does not throw
 
+  let unconfigured = "";
+  try {
+    await verifyCalendlySignature(`t=${t},v1=${hex}`, body, "");
+  } catch (e) {
+    unconfigured = (e as Error).message;
+  }
+  assertEquals(unconfigured, "Calendly signing key is not configured");
+
   for (const [header, expected] of [
     [`t=${t},v1=deadbeef`, "Bad Calendly signature"],
     [`t=${t - 600},v1=${hex}`, "Stale Calendly signature"],
