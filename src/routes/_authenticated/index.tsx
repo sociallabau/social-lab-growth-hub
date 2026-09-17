@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { todayInBrisbane } from "@/lib/metrics";
 
-type DashboardSearch = { service?: string; month?: string; allChannels?: boolean };
+type DashboardSearch = { service: string | undefined; month: string | undefined; allChannels: boolean | undefined };
 
 export const Route = createFileRoute("/_authenticated/")({
   validateSearch: (search: Record<string, unknown>): DashboardSearch => ({
@@ -37,7 +37,7 @@ function DashboardPage() {
         month={month}
         showAllChannels={search.allChannels ?? false}
         onMonthChange={(nextMonth) => navigate({ to: ".", search: (prev) => ({ ...prev, month: nextMonth }) })}
-        onShowAllChannels={(show) => navigate({ to: ".", search: (prev) => ({ ...prev, allChannels: show || undefined }) })}
+        onShowAllChannels={(show) => navigate({ to: ".", search: (prev) => ({ ...prev, allChannels: show ? true : undefined }) })}
       />
     </>
   );
