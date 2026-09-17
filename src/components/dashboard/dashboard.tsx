@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, CircleAlert, Clock3, ExternalLink, Target } from "lucide-react";
 import { toast } from "sonner";
@@ -48,7 +48,7 @@ function openLogToday() {
   window.dispatchEvent(new Event("social-lab:open-log-today"));
 }
 
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
