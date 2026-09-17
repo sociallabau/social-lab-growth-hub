@@ -56,15 +56,15 @@ export function TrendCharts({ rows, targetAov, targetLtvCac }: { rows: MonthRow[
         const data = rows.map((row) => ({ label: row.label, value: row.isFuture ? null : row[definition.key] }));
         const common = (
           <>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis dataKey="label" tickLine={false} axisLine={false} interval={2} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--chart-grid)" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} interval={2} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
             <YAxis hide domain={[0, "auto"]} />
             <ChartTooltip
               cursor={{ fill: "var(--muted)" }}
               content={<ChartTooltipContent hideIndicator formatter={(value) => <span className="font-medium">{valueFormatter(definition.format, Number(value))}</span>} />}
             />
-            {definition.sweetSpot ? <ReferenceArea y1={0.2} y2={0.4} fill="var(--warning)" fillOpacity={0.12} /> : null}
-            {target !== undefined ? <ReferenceLine y={target} stroke="var(--chart-5)" strokeDasharray="4 4" /> : null}
+            {definition.sweetSpot ? <ReferenceArea y1={0.2} y2={0.4} fill="var(--chart-target)" fillOpacity={0.04} /> : null}
+            {target !== undefined ? <ReferenceLine y={target} stroke="var(--chart-target)" strokeDasharray="4 4" /> : null}
           </>
         );
         return (
