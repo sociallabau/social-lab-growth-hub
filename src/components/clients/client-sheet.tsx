@@ -377,8 +377,8 @@ function HoursTab({ client }: { client: ClientWithStats }) {
       </div>
 
       {summary.overScope ? (
-        <p className="flex items-center gap-2 rounded-md border border-[var(--status-critical)]/40 bg-[var(--status-critical)]/10 p-3 text-sm">
-          <AlertTriangle aria-hidden className="size-4 shrink-0 text-[var(--status-critical)]" />
+        <p className="flex items-center gap-2 rounded-md border border-critical/40 bg-critical-soft p-3 text-sm text-critical">
+          <AlertTriangle aria-hidden className="size-4 shrink-0" />
           <span>Consistently over scope: have the conversation</span>
         </p>
       ) : null}
