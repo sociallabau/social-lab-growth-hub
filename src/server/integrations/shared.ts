@@ -94,7 +94,7 @@ export function keywordClassify(text: string): Classification {
   };
 }
 
-export async function classifyEnquiry(input: { from: string; subject?: string; body: string; channel: string }): Promise<Classification> {
+export async function classifyEnquiry(input: { from: string; subject?: string | undefined; body: string; channel: string }): Promise<Classification> {
   const text = `${input.subject ?? ""}\n${input.body}`.slice(0, 6000);
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return keywordClassify(text);
