@@ -46,6 +46,9 @@
   --color-critical: var(--critical);
   --color-critical-foreground: var(--critical-foreground);
   --color-critical-soft: var(--critical-soft);
+  --color-alert: var(--alert);
+  --color-alert-foreground: var(--alert-foreground);
+  --color-alert-soft: var(--alert-soft);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -92,9 +95,12 @@
   --warning: #8a5c00;
   --warning-foreground: #fafafa;
   --warning-soft: rgba(250, 178, 25, 0.16);
-  --critical: #8a5c00;
+  --critical: #0a0a0a;
   --critical-foreground: #fafafa;
-  --critical-soft: rgba(250, 178, 25, 0.16);
+  --critical-soft: rgba(10, 10, 10, 0.06);
+  --alert: #8a5c00;
+  --alert-foreground: #fafafa;
+  --alert-soft: rgba(250, 178, 25, 0.16);
 
   --border: rgba(10, 10, 10, 0.1);
   --input: rgba(10, 10, 10, 0.14);
@@ -151,9 +157,12 @@
   --warning: #fab219;
   --warning-foreground: #0a0a0a;
   --warning-soft: rgba(250, 178, 25, 0.14);
-  --critical: #fab219;
+  --critical: #fafafa;
   --critical-foreground: #0a0a0a;
-  --critical-soft: rgba(250, 178, 25, 0.14);
+  --critical-soft: rgba(255, 255, 255, 0.08);
+  --alert: #fab219;
+  --alert-foreground: #0a0a0a;
+  --alert-soft: rgba(250, 178, 25, 0.14);
 
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.14);

@@ -157,7 +157,7 @@ export function LeadsTable({ leads, onOpen }: { leads: Lead[]; onOpen: (lead: Le
                     {waiting === null ? (
                       formatDateTime(lead.first_response_at)
                     ) : (
-                      <span className={`flex items-center gap-1 ${late ? "text-critical" : ""}`}>
+                      <span className={`flex items-center gap-1 ${late ? "text-alert" : ""}`}>
                         <Clock className="size-3.5" aria-hidden />
                         {Math.round(waiting)} min waiting
                         <Button

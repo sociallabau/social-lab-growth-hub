@@ -69,7 +69,7 @@ export function LeadsBoard({ leads, onOpen }: { leads: Lead[]; onOpen: (lead: Le
                       </button>
                       {status === "new" && waiting !== null ? (
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <span className={`flex items-center gap-1 text-xs ${late ? "text-critical" : "text-muted-foreground"}`}>
+                          <span className={`flex items-center gap-1 text-xs ${late ? "text-alert" : "text-muted-foreground"}`}>
                             <Clock className="size-3.5" aria-hidden />
                             {Math.round(waiting)} min waiting
                           </span>
