@@ -14,6 +14,7 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
+  KeyRound,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useServiceLine } from "@/context/service-line";
 import { ServiceLineFilter } from "@/components/shell/service-line-filter";
+import { ChangePasswordDialog } from "@/components/shell/change-password-dialog";
 import { LogTodayDialog } from "@/components/log-today/log-today-dialog";
 import { useDailyCheckin } from "@/hooks/use-data";
 import { todayInBrisbane, TIME_ZONE } from "@/lib/format";
@@ -58,6 +60,7 @@ export function AppShell({
   const queryClient = useQueryClient();
   const search = serviceLine === "All" ? {} : { service: serviceLine };
   const [logOpen, setLogOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const today = todayInBrisbane();
   const checkin = useDailyCheckin(today);
   const logged = !!checkin.data;
@@ -161,6 +164,10 @@ export function AppShell({
                   <div className="text-xs text-muted-foreground">{email}</div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setPasswordOpen(true)}>
+                  <KeyRound className="size-4" aria-hidden="true" />
+                  Change password
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="size-4" aria-hidden="true" />
                   Sign out
@@ -174,6 +181,7 @@ export function AppShell({
       </div>
 
       <LogTodayDialog open={logOpen} onOpenChange={setLogOpen} />
+      <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
 
       {/* Mobile bottom tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-background md:hidden">

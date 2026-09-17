@@ -44,7 +44,6 @@ export function ChangePasswordDialog({
     setSaving(true);
     const { error } = await supabase.auth.updateUser({
       password: next,
-      // @ts-expect-error current_password is accepted by Supabase Auth
       current_password: current,
     });
     setSaving(false);
