@@ -5,3 +5,4 @@
 - [x] Build all ten dashboard sections and responsive charts.
 - [x] Validate types and calculation behaviour.
 - [ ] Verify the authenticated dashboard visually — blocked until a team login account exists.- [x] Build the Clients page (table, side sheet, hours tab).
+- [x] Build the Leads page (board with drag, table with filters, detail sheet, status flows).
