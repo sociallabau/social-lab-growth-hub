@@ -11,6 +11,7 @@ import { StaffSheet } from "@/components/capacity/staff-sheet";
 import {
   useClients,
   useListValues,
+  useRecentClientHours,
   useLocationDefaults,
   usePackages,
   useSaveLocationDefaults,
@@ -23,6 +24,8 @@ import {
 } from "@/hooks/use-data";
 import {
   capacityByRole,
+  tierEconomics,
+  weakestTier,
   headroomByPackage,
   marginOutlook,
   productionHoursPerMonth,
@@ -93,6 +96,7 @@ export function CapacityPage() {
   const { data: clients = [] } = useClients();
   const { data: roles = [] } = useListValues("role");
   const { data: tiers = [] } = useListValues("tier");
+  const { data: recentHours = [] } = useRecentClientHours(28);
 
   const [sheetStaff, setSheetStaff] = useState<StaffRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -130,6 +134,24 @@ export function CapacityPage() {
     [settings, locations.length, roleList, capacityStaff, capacityPackages, activeClientsByTier, defaults],
   );
 
+  const roleCostPerHour = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of roleCapacity) map[r.role] = r.costPerHour;
+    return map;
+  }, [roleCapacity]);
+
+  const tierRows = useMemo(
+    () =>
+      tierEconomics(
+        clients.filter((c) => clientStatus(c) === "Active").map((c) => ({ id: c.id, tier: c.tier, monthly_fee: c.monthly_fee })),
+        capacityPackages,
+        recentHours.map((h) => ({ client_id: h.client_id, role: h.role, hours: Number(h.hours) })),
+        roleCostPerHour,
+      ),
+    [clients, capacityPackages, recentHours, roleCostPerHour],
+  );
+  const weakest = useMemo(() => weakestTier(tierRows), [tierRows]);
+
   const headroom = useMemo(() => headroomByPackage(capacityPackages, roleCapacity), [capacityPackages, roleCapacity]);
 
   const priceIncrease = settings && Number(settings.price_point_current) > 0
@@ -157,6 +179,69 @@ export function CapacityPage() {
 
       <div className="space-y-6">
         <Card>
+        <CardHeader>
+          <CardTitle>What each tier earns and costs</CardTitle>
+          <CardDescription>
+            Fees against delivery hours, per tier. Uses logged hours from the last 4 weeks where they exist, and package
+            hours everywhere else.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tier</TableHead>
+                  <TableHead className="text-right">Clients</TableHead>
+                  <TableHead className="text-right">MRR</TableHead>
+                  <TableHead className="text-right">Avg fee</TableHead>
+                  <TableHead className="text-right">Hours / client</TableHead>
+                  <TableHead className="text-right">vs package</TableHead>
+                  <TableHead className="text-right">Delivery cost</TableHead>
+                  <TableHead className="text-right">Margin</TableHead>
+                  <TableHead className="text-right">Revenue / hour</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tierRows.map((row) => (
+                  <TableRow key={row.tier}>
+                    <TableCell className="font-medium">{row.tier}</TableCell>
+                    <TableCell className="text-right">{row.clients}</TableCell>
+                    <TableCell className="text-right">{formatMoney(row.mrr)}</TableCell>
+                    <TableCell className="text-right">{formatMoney(row.averageFee)}</TableCell>
+                    <TableCell className="text-right">
+                      {row.hoursPerClient === null ? "—" : hours(row.hoursPerClient)}
+                      {row.actualHours === null ? <span className="ml-1 text-xs text-muted-foreground">planned</span> : null}
+                    </TableCell>
+                    <TableCell className={`text-right ${(row.overPlanHoursPerClient ?? 0) > 5 ? "text-alert" : ""}`}>
+                      {row.overPlanHoursPerClient === null ? "—" : `${row.overPlanHoursPerClient > 0 ? "+" : ""}${hours(row.overPlanHoursPerClient)}`}
+                    </TableCell>
+                    <TableCell className="text-right">{formatMoney(row.deliveryCost)}</TableCell>
+                    <TableCell className={`text-right ${row.marginPct < 0.4 ? "text-alert" : ""}`}>{formatPercent(row.marginPct)}</TableCell>
+                    <TableCell className="text-right">{row.revenuePerHour === null ? "—" : formatMoney(row.revenuePerHour)}</TableCell>
+                  </TableRow>
+                ))}
+                {tierRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
+                      Add packages and clients to see this.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
+          {weakest ? (
+            <p className="text-sm text-muted-foreground">
+              {weakest.tier} returns the least per delivery hour
+              {weakest.revenuePerHour === null ? "" : ` (${formatMoney(weakest.revenuePerHour)} an hour)`}. Your cheapest
+              tier is often the one eating the most time: check it before hiring.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+<Card>
           <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
             <div>
               <CardTitle className="text-base">Team</CardTitle>
@@ -431,7 +516,7 @@ function PackagesCard({
 }) {
   const save = useSavePackage();
 
-  const commitNumber = (id: string, key: "price" | "planned_volume", raw: string) => {
+  const commitNumber = (id: string, key: "price" | "planned_volume" | "revenue_target", raw: string) => {
     const trimmed = raw.trim();
     const value = trimmed === "" ? null : Number(trimmed);
     if (value !== null && (Number.isNaN(value) || value < 0)) {
@@ -471,6 +556,7 @@ function PackagesCard({
               <TableRow>
                 <TableHead>Tier</TableHead>
                 <TableHead className="text-right">Price ($/mo)</TableHead>
+                <TableHead className="text-right">Revenue goal ($/mo)</TableHead>
                 <TableHead className="text-right">Planned volume</TableHead>
                 {roles.map((role) => (
                   <TableHead key={role} className="text-right">
@@ -493,6 +579,14 @@ function PackagesCard({
                           inputMode="decimal"
                           defaultValue={row.price === null ? "" : String(row.price)}
                           onBlur={(e) => commitNumber(row.id, "price", e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          className="ml-auto w-28 text-right"
+                          inputMode="decimal"
+                          defaultValue={row.revenue_target === null ? "" : String(row.revenue_target)}
+                          onBlur={(e) => commitNumber(row.id, "revenue_target", e.target.value)}
                         />
                       </TableCell>
                       <TableCell className="text-right">

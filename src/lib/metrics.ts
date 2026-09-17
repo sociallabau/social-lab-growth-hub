@@ -536,3 +536,110 @@ export function clientHoursSummary(
     overScope: overByPerWeek >= 5,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Revenue against target, by tier
+// ---------------------------------------------------------------------------
+
+export interface TierTarget {
+  tier: string;
+  revenue_target: number | null;
+}
+
+export interface TierRevenueRow {
+  tier: string;
+  clients: number;
+  mrr: number;
+  target: number;
+  gap: number;
+  progress: number;
+  averageFee: number;
+}
+
+export interface RevenueSummary {
+  mrr: number;
+  target: number;
+  gap: number;
+  progress: number;
+  activeClients: number;
+  averageFee: number;
+  /** Clients still to win at the current average fee to reach the target. */
+  clientsToTarget: number;
+  byTier: TierRevenueRow[];
+}
+
+export function revenueSummary(
+  clients: Client[],
+  tierTargets: TierTarget[],
+  monthlyTarget: number,
+  today: ISODate,
+): RevenueSummary {
+  const active = clients.filter((c) => isActiveOn(c, today));
+  const mrr = active.reduce((s, c) => s + (Number(c.monthly_fee) || 0), 0);
+  const averageFee = div(mrr, active.length);
+  const target = Number(monthlyTarget) || 0;
+
+  const tiers = [...new Set([...tierTargets.map((t) => t.tier), ...active.map((c) => c.tier ?? "No tier")])];
+  const byTier: TierRevenueRow[] = tiers.map((tier) => {
+    const rows = active.filter((c) => (c.tier ?? "No tier") === tier);
+    const tierMrr = rows.reduce((s, c) => s + (Number(c.monthly_fee) || 0), 0);
+    const tierTarget = Number(tierTargets.find((t) => t.tier === tier)?.revenue_target) || 0;
+    return {
+      tier,
+      clients: rows.length,
+      mrr: tierMrr,
+      target: tierTarget,
+      gap: tierTarget - tierMrr,
+      progress: div(tierMrr, tierTarget),
+      averageFee: div(tierMrr, rows.length),
+    };
+  }).sort((a, b) => b.mrr - a.mrr);
+
+  return {
+    mrr,
+    target,
+    gap: target - mrr,
+    progress: div(mrr, target),
+    activeClients: active.length,
+    averageFee,
+    clientsToTarget: averageFee > 0 ? Math.max(0, Math.ceil((target - mrr) / averageFee)) : 0,
+    byTier,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Assumptions the history can now answer instead of guessing
+// ---------------------------------------------------------------------------
+
+export interface LifetimeSuggestion {
+  months: number | null;
+  basis: string;
+  sampleSize: number;
+}
+
+/**
+ * Average client lifetime from real history. Uses clients who have left; falls
+ * back to implied lifetime from churn once there are enough of them.
+ */
+export function suggestedLifetimeMonths(clients: Client[], today: ISODate): LifetimeSuggestion {
+  const lost = clients.filter((c) => c.end_date && c.start_date);
+  if (lost.length >= 3) {
+    const total = lost.reduce((s, c) => s + wholeMonths(c.start_date!, c.end_date!), 0);
+    return { months: Math.round(div(total, lost.length) * 10) / 10, basis: "average tenure of clients who have left", sampleSize: lost.length };
+  }
+  // Not enough departures yet: use the last 6 months of churn
+  const sixMonthsAgo = addMonths(monthStart(today), -6);
+  const lostRecently = clients.filter((c) => c.end_date && c.end_date >= sixMonthsAgo).length;
+  const activeAtStart = clients.filter((c) => isActiveOn(c, sixMonthsAgo)).length;
+  const monthlyChurn = div(lostRecently / 6, activeAtStart);
+  if (monthlyChurn > 0) {
+    return { months: Math.round(div(1, monthlyChurn)), basis: "implied by churn over the last 6 months", sampleSize: lostRecently };
+  }
+  return { months: null, basis: "not enough history yet: no clients have left", sampleSize: 0 };
+}
+
+/** Average tenure of clients still with you, a floor for the lifetime estimate. */
+export function averageTenureMonths(clients: Client[], today: ISODate): number {
+  const active = clients.filter((c) => isActiveOn(c, today) && c.start_date);
+  return div(active.reduce((s, c) => s + wholeMonths(c.start_date!, today), 0), active.length);
+}

@@ -528,6 +528,7 @@ export type Database = {
           id: string
           planned_volume: number | null
           price: number | null
+          revenue_target: number | null
           tier: string
         }
         Insert: {
@@ -535,6 +536,7 @@ export type Database = {
           id?: string
           planned_volume?: number | null
           price?: number | null
+          revenue_target?: number | null
           tier: string
         }
         Update: {
@@ -542,6 +544,7 @@ export type Database = {
           id?: string
           planned_volume?: number | null
           price?: number | null
+          revenue_target?: number | null
           tier?: string
         }
         Relationships: []
@@ -563,6 +566,7 @@ export type Database = {
           target_labour_pct: number
           target_leads_per_week: number
           target_ltv_cac: number
+          target_monthly_revenue: number
           target_responded_30: number
           tracking_start_month: string
           updated_at: string
@@ -583,6 +587,7 @@ export type Database = {
           target_labour_pct?: number
           target_leads_per_week?: number
           target_ltv_cac?: number
+          target_monthly_revenue?: number
           target_responded_30?: number
           tracking_start_month?: string
           updated_at?: string
@@ -603,6 +608,7 @@ export type Database = {
           target_labour_pct?: number
           target_leads_per_week?: number
           target_ltv_cac?: number
+          target_monthly_revenue?: number
           target_responded_30?: number
           tracking_start_month?: string
           updated_at?: string

@@ -132,3 +132,100 @@ export function marginOutlook(packages: Package[], activeClientsByTier: Record<s
     };
   });
 }
+
+// ---------------------------------------------------------------------------
+// Economics per tier: what each tier earns, what it costs in delivery hours,
+// and whether the cheap tiers are quietly eating the expensive ones.
+// ---------------------------------------------------------------------------
+
+export interface TierClient {
+  id?: string;
+  tier: string | null;
+  monthly_fee: number | null;
+}
+
+export interface HoursEntry {
+  client_id: string;
+  role: string | null;
+  hours: number;
+}
+
+export interface TierEconomics {
+  tier: string;
+  clients: number;
+  mrr: number;
+  averageFee: number;
+  plannedHours: number;
+  actualHours: number | null;
+  hoursPerClient: number | null;
+  deliveryCost: number;
+  grossProfit: number;
+  marginPct: number;
+  revenuePerHour: number | null;
+  overPlanHoursPerClient: number | null;
+}
+
+const hoursSum = (h: Record<string, number>) => Object.values(h).reduce((s, v) => s + (Number(v) || 0), 0);
+
+/**
+ * Per tier, using logged hours where they exist and package hours otherwise.
+ * `hours` covers `weeks` of logging and is scaled to a month.
+ */
+export function tierEconomics(
+  clients: TierClient[],
+  packages: Package[],
+  hours: HoursEntry[],
+  roleCostPerHour: Record<string, number>,
+  weeks = 4,
+): TierEconomics[] {
+  const tiers = [...new Set([...packages.map((p) => p.tier), ...clients.map((c) => c.tier ?? "No tier")])];
+  const clientTier = new Map(clients.map((c) => [c.id ?? "", c.tier ?? "No tier"]));
+  const monthFactor = weeks > 0 ? 52 / 12 / weeks : 0;
+
+  return tiers.map((tier) => {
+    const rows = clients.filter((c) => (c.tier ?? "No tier") === tier);
+    const pkg = packages.find((p) => p.tier === tier);
+    const planPerClient = pkg ? hoursSum(pkg.hours_by_role) : 0;
+    const mrr = rows.reduce((s, c) => s + (Number(c.monthly_fee) || 0), 0);
+
+    const logged = hours.filter((h) => clientTier.get(h.client_id) === tier);
+    const actualHours = logged.length ? logged.reduce((s, h) => s + (Number(h.hours) || 0), 0) * monthFactor : null;
+    const hoursUsed = actualHours ?? planPerClient * rows.length;
+
+    // Cost the hours actually logged at each role's rate; fall back to the package mix.
+    let deliveryCost = 0;
+    if (logged.length) {
+      for (const h of logged) {
+        deliveryCost += (Number(h.hours) || 0) * monthFactor * (roleCostPerHour[h.role ?? ""] ?? 0);
+      }
+    } else if (pkg) {
+      for (const [role, roleHours] of Object.entries(pkg.hours_by_role)) {
+        deliveryCost += (Number(roleHours) || 0) * rows.length * (roleCostPerHour[role] ?? 0);
+      }
+    }
+
+    const grossProfit = mrr - deliveryCost;
+    return {
+      tier,
+      clients: rows.length,
+      mrr,
+      averageFee: div(mrr, rows.length),
+      plannedHours: planPerClient * rows.length,
+      actualHours,
+      hoursPerClient: actualHours === null ? (planPerClient || null) : div(actualHours, rows.length),
+      deliveryCost,
+      grossProfit,
+      marginPct: div(grossProfit, mrr),
+      revenuePerHour: hoursUsed > 0 ? div(mrr, hoursUsed) : null,
+      overPlanHoursPerClient:
+        actualHours !== null && planPerClient > 0 ? div(actualHours, rows.length) - planPerClient : null,
+    };
+  }).sort((a, b) => b.mrr - a.mrr);
+}
+
+/** The tier returning the least revenue per delivery hour, which is where to look first. */
+export function weakestTier(rows: TierEconomics[]): TierEconomics | null {
+  const measurable = rows.filter((r) => r.clients > 0 && r.revenuePerHour !== null);
+  if (!measurable.length) return null;
+  return measurable.reduce((a, b) => ((b.revenuePerHour ?? 0) < (a.revenuePerHour ?? 0) ? b : a));
+}

@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSettings, useUpdateSettings, type Settings } from "@/hooks/use-data";
-import { parseAUDate } from "@/lib/format";
+import { useClients, useSettings, useUpdateSettings, type Settings } from "@/hooks/use-data";
+import { parseAUDate, todayInBrisbane } from "@/lib/format";
+import { averageTenureMonths, suggestedLifetimeMonths } from "@/lib/metrics";
 
 type FieldKind = "money" | "number" | "percent" | "month" | "text" | "email";
 
@@ -31,6 +32,7 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   {
     title: "Targets",
     fields: [
+      { key: "target_monthly_revenue", label: "Monthly revenue goal", kind: "money", hint: "Total MRR you are aiming at. Per-tier goals live on the Capacity page." },
       { key: "target_leads_per_week", label: "Leads per week", kind: "number" },
       { key: "target_conversion", label: "Conversion", kind: "percent" },
       { key: "target_aov", label: "Average order value", kind: "money" },
@@ -62,6 +64,7 @@ function toInput(value: unknown, kind: FieldKind): string {
 }
 
 export function AssumptionsTab() {
+  const { data: clients = [] } = useClients();
   const { data: settings, isLoading } = useSettings();
   const update = useUpdateSettings();
   const [form, setForm] = useState<Record<string, string>>({});
@@ -78,6 +81,12 @@ export function AssumptionsTab() {
   if (isLoading || !settings) return <p className="text-sm text-muted-foreground">Loading settings…</p>;
 
   const set = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Client history can answer this better than a guess can
+  const today = todayInBrisbane();
+  const lifetime = suggestedLifetimeMonths(clients, today);
+  const tenure = averageTenureMonths(clients, today);
+  const lifetimeDiffers = lifetime.months !== null && Math.abs(lifetime.months - Number(settings.avg_client_lifetime_months)) >= 1;
 
   const save = () => {
     const patch: Record<string, unknown> = {};
@@ -113,6 +122,29 @@ export function AssumptionsTab() {
 
   return (
     <div className="space-y-4">
+      {lifetimeDiffers ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div>
+              <p className="text-sm">
+                Your history suggests an average client lifetime of <strong>{lifetime.months} months</strong> ({lifetime.basis},
+                {" "}{lifetime.sampleSize} client{lifetime.sampleSize === 1 ? "" : "s"}). Current setting:{" "}
+                {Number(settings.avg_client_lifetime_months)} months.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Clients still with you average {Math.round(tenure)} months so far. LTV and LTV:CAC depend on this number.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => set("avg_client_lifetime_months", String(lifetime.months))}
+            >
+              Use {lifetime.months} months
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2">
         {GROUPS.map((group) => (
           <Card key={group.title}>
