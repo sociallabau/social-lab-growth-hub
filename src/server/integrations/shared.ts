@@ -73,7 +73,7 @@ export interface Classification {
   name: string | null;
   company: string | null;
   phone: string | null;
-  service_line: string | null;
+  tier: string | null;
   number_of_agents: string | null;
   monthly_marketing_budget: string | null;
 }
@@ -89,7 +89,7 @@ export function keywordClassify(text: string): Classification {
     is_lead: isLead,
     reason: isLead ? "Mentions services or pricing" : "No clear enquiry language",
     summary: text.replace(/\s+/g, " ").slice(0, 240),
-    name: null, company: null, phone: null, service_line: null,
+    name: null, company: null, phone: null, tier: null,
     number_of_agents: null, monthly_marketing_budget: null,
   };
 }
@@ -102,7 +102,7 @@ export async function classifyEnquiry(input: { from: string; subject?: string | 
 
 Decide whether this ${input.channel} message is a genuine new-business enquiry (someone who might buy) rather than spam, a vendor selling to us, existing-client admin, a recruiter, a newsletter or a notification.
 
-Reply with only a JSON object with keys: is_lead (boolean), reason (short), summary (one sentence), name, company, phone, service_line (one of "Media", "Digital & Brand", "Podcast" or null), number_of_agents, monthly_marketing_budget. Use null when unknown.
+Reply with only a JSON object with keys: is_lead (boolean), reason (short), summary (one sentence), name, company, phone, tier (one of "Media", "Digital & Brand", "Podcast" or null), number_of_agents, monthly_marketing_budget. Use null when unknown.
 
 From: ${input.from}
 Message:

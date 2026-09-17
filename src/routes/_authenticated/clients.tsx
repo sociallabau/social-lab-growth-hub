@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell/page-header";
 import { ClientsTable } from "@/components/clients/clients-table";
-import { useServiceLine } from "@/context/service-line";
+import { useTier } from "@/context/tier";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
@@ -17,11 +17,11 @@ export const Route = createFileRoute("/_authenticated/clients")({
 });
 
 function ClientsPage() {
-  const { serviceLineFilter } = useServiceLine();
+  const { tierFilter } = useTier();
   return (
     <>
       <PageHeader title="Clients" description="Fees, tenure, hours and price reviews." />
-      <ClientsTable serviceLine={serviceLineFilter} />
+      <ClientsTable tier={tierFilter} />
     </>
   );
 }

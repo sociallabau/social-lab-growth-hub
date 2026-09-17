@@ -54,7 +54,7 @@ export function LeadActionsProvider({ children }: { children: ReactNode }) {
   const [wonValue, setWonValue] = useState("");
   const [lostReason, setLostReason] = useState<string>(LOST_REASONS[0]);
   const [wonLead, setWonLead] = useState<{ lead: Lead; value: number } | null>(null);
-  const [clientDraft, setClientDraft] = useState({ name: "", service_line: "", lead_channel: "", start_date: todayInBrisbane(), monthly_fee: "" });
+  const [clientDraft, setClientDraft] = useState({ name: "", tier: "", lead_channel: "", start_date: todayInBrisbane(), monthly_fee: "" });
 
   const apply = useCallback(
     async (lead: Lead, status: LeadStatus, patch: Record<string, unknown>, note: string) => {
@@ -145,7 +145,7 @@ export function LeadActionsProvider({ children }: { children: ReactNode }) {
         setPending(null);
         setClientDraft({
           name: lead.company || lead.name || "",
-          service_line: lead.service_line ?? "",
+          tier: lead.tier ?? "",
           lead_channel: lead.channel ?? "",
           start_date: todayInBrisbane(),
           monthly_fee: String(value),
@@ -165,7 +165,7 @@ export function LeadActionsProvider({ children }: { children: ReactNode }) {
     try {
       const client = await createClient.mutateAsync({
         name: clientDraft.name,
-        service_line: clientDraft.service_line || null,
+        tier: clientDraft.tier || null,
         lead_channel: clientDraft.lead_channel || null,
         start_date: clientDraft.start_date,
         monthly_fee: Number(clientDraft.monthly_fee) || null,
@@ -280,8 +280,8 @@ export function LeadActionsProvider({ children }: { children: ReactNode }) {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="c-service">Service line</Label>
-                <Input id="c-service" value={clientDraft.service_line} onChange={(e) => setClientDraft({ ...clientDraft, service_line: e.target.value })} />
+                <Label htmlFor="c-service">Tier</Label>
+                <Input id="c-service" value={clientDraft.tier} onChange={(e) => setClientDraft({ ...clientDraft, tier: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="c-channel">Lead channel</Label>

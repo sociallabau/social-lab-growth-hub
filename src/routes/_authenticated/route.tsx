@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/shell/app-shell";
-import { ServiceLineProvider } from "@/context/service-line";
+import { TierProvider } from "@/context/tier";
 
 type AuthSearch = { service?: string | undefined };
 
@@ -37,10 +37,10 @@ function AuthenticatedLayout() {
   const { member, user } = Route.useRouteContext();
 
   return (
-    <ServiceLineProvider value={service}>
+    <TierProvider value={service}>
       <AppShell displayName={member.full_name ?? user.email ?? "Team"} email={user.email ?? ""}>
         <Outlet />
       </AppShell>
-    </ServiceLineProvider>
+    </TierProvider>
   );
 }

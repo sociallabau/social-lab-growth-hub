@@ -8,12 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClientSheet } from "@/components/clients/client-sheet";
 import { useClientsWithStats, type ClientWithStats } from "@/hooks/use-data";
-import { bottomThirtyPercent, filterByService, scopeReviewDue } from "@/lib/metrics";
+import { bottomThirtyPercent, filterByTier, scopeReviewDue } from "@/lib/metrics";
 import { formatDate, formatMoney, todayInBrisbane } from "@/lib/format";
 
 type SortKey =
   | "name"
-  | "service_line"
+  | "tier"
   | "tier"
   | "lead_channel"
   | "start_date"
@@ -26,7 +26,6 @@ type SortKey =
 
 const columns: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "name", label: "Client" },
-  { key: "service_line", label: "Service line" },
   { key: "tier", label: "Tier" },
   { key: "lead_channel", label: "Lead channel" },
   { key: "start_date", label: "Start date" },
@@ -38,7 +37,7 @@ const columns: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "price_review_status", label: "Price review" },
 ];
 
-export function ClientsTable({ serviceLine }: { serviceLine: string | undefined }) {
+export function ClientsTable({ tier }: { tier: string | undefined }) {
   const clients = useClientsWithStats();
   const today = todayInBrisbane();
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "monthly_fee", dir: "asc" });
@@ -47,7 +46,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
 
   const rows = useMemo(() => {
     let list = clients.data ?? [];
-    if (serviceLine) list = filterByService(list, serviceLine);
+    if (tier) list = filterByTier(list, tier);
     if (status !== "all") list = list.filter((c) => (c.end_date ? "lost" : "active") === status);
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
@@ -59,13 +58,13 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
-  }, [clients.data, serviceLine, status, sort]);
+  }, [clients.data, tier, status, sort]);
 
   const bottomIds = useMemo(() => {
     const active = (clients.data ?? []).filter((c) => c.start_date && !c.end_date);
     return new Set(
       bottomThirtyPercent(
-        active.map((c) => ({ id: c.id ?? "", name: c.name ?? "", service_line: c.service_line, start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
+        active.map((c) => ({ id: c.id ?? "", name: c.name ?? "", tier: c.tier, start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
         today,
       ).map((c) => c.id),
     );
@@ -142,7 +141,6 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
                         ) : null}
                       </span>
                     </TableCell>
-                    <TableCell>{client.service_line ?? "—"}</TableCell>
                     <TableCell>{client.tier ?? "—"}</TableCell>
                     <TableCell>{client.lead_channel ?? "—"}</TableCell>
                     <TableCell>{formatDate(client.start_date)}</TableCell>

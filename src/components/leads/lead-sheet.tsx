@@ -138,8 +138,8 @@ export function LeadSheet({ lead, onOpenChange }: { lead: Lead | null; onOpenCha
                 <dd>{lead.channel ?? "—"}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Service line</dt>
-                <dd>{lead.service_line ?? "—"}</dd>
+                <dt className="text-muted-foreground">Tier</dt>
+                <dd>{lead.tier ?? "—"}</dd>
               </div>
             </dl>
           </section>

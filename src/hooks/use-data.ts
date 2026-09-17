@@ -50,7 +50,7 @@ export const settingsQuery = () =>
     },
   });
 
-export type ListName = "channel" | "service_line" | "tier" | "role";
+export type ListName = "channel" | "tier" | "tier" | "role";
 export type ListItemsByList = Record<ListName, ListItem[]>;
 
 export const listItemsQuery = () =>
@@ -60,7 +60,7 @@ export const listItemsQuery = () =>
       const rows = unwrap<ListItem[]>(
         await supabase.from("list_items").select("*").eq("active", true).order("sort_order"),
       );
-      const grouped: ListItemsByList = { channel: [], service_line: [], tier: [], role: [] };
+      const grouped: ListItemsByList = { channel: [], tier: [], role: [] };
       for (const row of rows) {
         const list = row.list as ListName;
         if (grouped[list]) grouped[list].push(row);
@@ -208,14 +208,14 @@ export function useSaveListItem() {
   });
 }
 
-/** Upserts a daily entry on its (date, channel, service line) key. */
+/** Upserts a daily entry on its (date, channel, tier) key. */
 export function useSaveDailyEntry() {
   const invalidate = useInvalidate([queryKeys.dailyEntries]);
   return useMutation({
     mutationFn: async (row: TablesInsert<"daily_entries">) => {
       const res = await supabase
         .from("daily_entries")
-        .upsert(row, { onConflict: "date,channel,service_line" })
+        .upsert(row, { onConflict: "date,channel,tier" })
         .select()
         .single();
       if (res.error) throw new Error(res.error.message);
@@ -413,7 +413,7 @@ export const dailyCheckinQuery = (date: string) =>
 
 export const useDailyCheckin = (date: string) => useQuery(dailyCheckinQuery(date));
 
-/** Upserts many daily entries at once on (date, channel, service line). */
+/** Upserts many daily entries at once on (date, channel, tier). */
 export function useSaveDailyEntries() {
   const invalidate = useInvalidate([queryKeys.dailyEntries]);
   return useMutation({
@@ -421,7 +421,7 @@ export function useSaveDailyEntries() {
       if (!rows.length) return [];
       const res = await supabase
         .from("daily_entries")
-        .upsert(rows, { onConflict: "date,channel,service_line" })
+        .upsert(rows, { onConflict: "date,channel,tier" })
         .select();
       if (res.error) throw new Error(res.error.message);
       return res.data;

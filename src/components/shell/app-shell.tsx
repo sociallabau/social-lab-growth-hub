@@ -28,8 +28,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/use-theme";
-import { useServiceLine } from "@/context/service-line";
-import { ServiceLineFilter } from "@/components/shell/service-line-filter";
+import { useTier } from "@/context/tier";
+import { TierFilter } from "@/components/shell/tier-filter";
 import { ChangePasswordDialog } from "@/components/shell/change-password-dialog";
 import { LogTodayDialog } from "@/components/log-today/log-today-dialog";
 import { useDailyCheckin } from "@/hooks/use-data";
@@ -54,11 +54,11 @@ export function AppShell({
   email: string;
 }) {
   const { theme, toggle } = useTheme();
-  const { serviceLine } = useServiceLine();
+  const { tier } = useTier();
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const search = serviceLine === "All" ? {} : { service: serviceLine };
+  const search = tier === "All" ? {} : { service: tier };
   const [logOpen, setLogOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const today = todayInBrisbane();
@@ -117,7 +117,7 @@ export function AppShell({
             Social <span className="text-primary">Lab</span>
           </span>
           <div className="ml-auto flex items-center gap-2">
-            <ServiceLineFilter />
+            <TierFilter />
             <Button
               size="sm"
               onClick={() => setLogOpen(true)}

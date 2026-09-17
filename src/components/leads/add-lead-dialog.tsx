@@ -32,7 +32,7 @@ const empty = {
   email: "",
   phone: "",
   channel: "",
-  service_line: "",
+  tier: "",
   message: "",
   number_of_agents: "",
   monthly_marketing_budget: "",
@@ -63,7 +63,7 @@ export function AddLeadDialog() {
         email: draft.email || null,
         phone: draft.phone || null,
         channel: draft.channel || null,
-        service_line: draft.service_line || null,
+        tier: draft.tier || null,
         message: draft.message || null,
         number_of_agents: draft.number_of_agents || null,
         monthly_marketing_budget: draft.monthly_marketing_budget || null,
@@ -126,13 +126,13 @@ export function AddLeadDialog() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Service line</Label>
-            <Select value={draft.service_line} onValueChange={(v) => set("service_line", v)}>
+            <Label>Tier</Label>
+            <Select value={draft.tier} onValueChange={(v) => set("tier", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose" />
               </SelectTrigger>
               <SelectContent>
-                {(lists.data?.service_line ?? []).map((i) => (
+                {(lists.data?.tier ?? []).map((i) => (
                   <SelectItem key={i.id} value={i.value}>
                     {i.value}
                   </SelectItem>

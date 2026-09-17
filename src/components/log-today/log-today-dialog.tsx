@@ -54,7 +54,7 @@ import {
 import { formatDateTime, formatMoney, formatPercent, todayInBrisbane } from "@/lib/format";
 
 type DecisionKind = "lead" | "not_lead" | "not_fit";
-type Decision = { kind: DecisionKind; channel: string; service_line: string };
+type Decision = { kind: DecisionKind; channel: string; tier: string };
 
 const SOURCE_ICON = {
   email: Mail,
@@ -121,9 +121,9 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     if (existing.length) {
       setRows(
         existing.map((e) => ({
-          key: `${e.channel}|||${e.service_line}`,
+          key: `${e.channel}|||${e.tier}`,
           channel: e.channel,
-          service_line: e.service_line,
+          tier: e.tier,
           new_leads: e.new_leads,
           responded_within_30_min: e.responded_within_30_min,
           meetings_held: e.meetings_held,
@@ -147,7 +147,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     pending.every((l) => {
       const d = decisions[l.id];
       if (!d) return false;
-      return d.kind !== "lead" || (d.channel && d.service_line);
+      return d.kind !== "lead" || (d.channel && d.tier);
     }) && meetingsDue.every((l) => meetingAnswers[l.id]);
 
   function setDecision(lead: Lead, kind: DecisionKind) {
@@ -156,7 +156,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
       [lead.id]: {
         kind,
         channel: prev[lead.id]?.channel ?? lead.channel ?? "",
-        service_line: prev[lead.id]?.service_line ?? lead.service_line ?? "",
+        tier: prev[lead.id]?.tier ?? lead.tier ?? "",
       },
     }));
   }
@@ -173,7 +173,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
           ? {
               status: "new",
               channel: d.channel,
-              service_line: d.service_line,
+              tier: d.tier,
               reviewed_by: reviewer,
               reviewed_at: now,
             }
@@ -238,7 +238,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
       if (win.lead_id) {
         await updateLead.mutateAsync({
           id: win.lead_id,
-          patch: { status: "won", won_at: wonAt, won_value: Number(win.monthly_fee), channel: win.channel, service_line: win.service_line },
+          patch: { status: "won", won_at: wonAt, won_value: Number(win.monthly_fee), channel: win.channel, tier: win.tier },
         });
       }
       await createClient.mutateAsync(winToClient(win, date));
@@ -271,9 +271,9 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     }
     const seen = new Set<string>();
     for (const r of rows) {
-      const key = `${r.channel}|||${r.service_line}`;
+      const key = `${r.channel}|||${r.tier}`;
       if (seen.has(key)) {
-        toast.error(`${r.channel} · ${r.service_line} appears twice`);
+        toast.error(`${r.channel} · ${r.tier} appears twice`);
         return;
       }
       seen.add(key);
@@ -284,7 +284,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         rows.map((r) => ({
           date,
           channel: r.channel,
-          service_line: r.service_line,
+          tier: r.tier,
           new_leads: r.new_leads,
           responded_within_30_min: r.responded_within_30_min,
           meetings_held: r.meetings_held,
@@ -350,7 +350,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                   onClick={() =>
                     setEnquiries((prev) => {
                       const last = prev[prev.length - 1];
-                      return [...prev, newEnquiryDraft(last?.channel ?? "", last?.service_line ?? "")];
+                      return [...prev, newEnquiryDraft(last?.channel ?? "", last?.tier ?? "")];
                     })
                   }
                 >
@@ -405,13 +405,13 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                           </Select>
                         </div>
                         <div className="grid gap-1.5">
-                          <Label>Service line</Label>
-                          <Select value={draft.service_line} onValueChange={(value) => update({ service_line: value })}>
+                          <Label>Tier</Label>
+                          <Select value={draft.tier} onValueChange={(value) => update({ tier: value })}>
                             <SelectTrigger>
                               <SelectValue placeholder="What for" />
                             </SelectTrigger>
                             <SelectContent>
-                              {(lists.data?.service_line ?? []).map((sl) => (
+                              {(lists.data?.tier ?? []).map((sl) => (
                                 <SelectItem key={sl.id} value={sl.value}>
                                   {sl.value}
                                 </SelectItem>
@@ -565,18 +565,18 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                         </Select>
                       </div>
                       <div className="grid gap-1.5">
-                        <Label>Service line</Label>
+                        <Label>Tier</Label>
                         <Select
-                          value={decision.service_line}
+                          value={decision.tier}
                           onValueChange={(value) =>
-                            setDecisions((p) => ({ ...p, [lead.id]: { ...decision, service_line: value } }))
+                            setDecisions((p) => ({ ...p, [lead.id]: { ...decision, tier: value } }))
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Choose a service line" />
+                            <SelectValue placeholder="Choose a tier" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(lists.data?.service_line ?? []).map((s) => (
+                            {(lists.data?.tier ?? []).map((s) => (
                               <SelectItem key={s.id} value={s.value}>
                                 {s.value}
                               </SelectItem>
@@ -649,7 +649,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                 <TableHeader>
                   <TableRow>
                     <TableHead>Channel</TableHead>
-                    <TableHead>Service line</TableHead>
+                    <TableHead>Tier</TableHead>
                     <TableHead>Leads</TableHead>
                     <TableHead>≤30 min</TableHead>
                     <TableHead>Meetings</TableHead>
@@ -677,14 +677,14 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                       </TableCell>
                       <TableCell className="min-w-40">
                         <Select
-                          value={r.service_line}
-                          onValueChange={(value) => updateRow(r.key, { service_line: value })}
+                          value={r.tier}
+                          onValueChange={(value) => updateRow(r.key, { tier: value })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Service line" />
+                            <SelectValue placeholder="Tier" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(lists.data?.service_line ?? []).map((s) => (
+                            {(lists.data?.tier ?? []).map((s) => (
                               <SelectItem key={s.id} value={s.value}>
                                 {s.value}
                               </SelectItem>
@@ -781,7 +781,6 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                         client_name: "",
                         monthly_fee: 0,
                         tier: "",
-                        service_line: "",
                         channel: "",
                       })
                     }
@@ -817,7 +816,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                             lead_id: value === "new" ? null : value,
                             client_name: lead ? (lead.company ?? lead.name ?? "") : win.client_name,
                             channel: lead?.channel ?? win.channel,
-                            service_line: lead?.service_line ?? win.service_line,
+                            tier: lead?.tier ?? win.tier,
                           });
                         }}
                       >
@@ -869,16 +868,16 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                       </Select>
                     </div>
                     <div className="grid gap-1.5">
-                      <Label>Service line</Label>
+                      <Label>Tier</Label>
                       <Select
-                        value={win.service_line}
-                        onValueChange={(value) => setWin({ ...win, service_line: value })}
+                        value={win.tier}
+                        onValueChange={(value) => setWin({ ...win, tier: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Service line" />
+                          <SelectValue placeholder="Tier" />
                         </SelectTrigger>
                         <SelectContent>
-                          {(lists.data?.service_line ?? []).map((sl) => (
+                          {(lists.data?.tier ?? []).map((sl) => (
                             <SelectItem key={sl.id} value={sl.value}>
                               {sl.value}
                             </SelectItem>

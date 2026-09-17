@@ -59,7 +59,7 @@ export async function syncEmail(db: SupabaseClient): Promise<SyncResult> {
           email: from,
           phone: ai.phone,
           channel: "Email enquiry",
-          service_line: ai.service_line,
+          tier: ai.tier,
           subject: mail.headers.subject,
           message: body.slice(0, 8000),
           ai_summary: ai.summary,

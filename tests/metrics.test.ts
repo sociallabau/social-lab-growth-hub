@@ -20,17 +20,17 @@ const settings: Settings = {
   target_ltv_cac: 3,
 };
 
-const e = (date: string, channel: string, service_line: string, leads: number, responded: number, meetings: number, wins: number, value: number, spend: number): DailyEntry => ({
-  date, channel, service_line, new_leads: leads, responded_within_30_min: responded, meetings_held: meetings,
+const e = (date: string, channel: string, tier: string, leads: number, responded: number, meetings: number, wins: number, value: number, spend: number): DailyEntry => ({
+  date, channel, tier, new_leads: leads, responded_within_30_min: responded, meetings_held: meetings,
   clients_won: wins, value_won_monthly: value, marketing_spend: spend,
 });
 
 const entries = [
   // Example row from the spreadsheet's Start Here tab
-  e("2026-09-15", "Meta Ads", "Digital & Brand", 3, 3, 2, 1, 4500, 250),
-  e("2026-09-16", "Client referral", "Media", 2, 1, 1, 1, 3600, 0),
-  e("2026-09-17", "Meta Ads", "Digital & Brand", 4, 4, 1, 1, 3000, 300),
-  e("2026-08-30", "Google Ads", "Podcast", 5, 2, 0, 0, 0, 500),
+  e("2026-09-15", "Meta Ads", "Tier 1", 3, 3, 2, 1, 4500, 250),
+  e("2026-09-16", "Client referral", "Tier 2", 2, 1, 1, 1, 3600, 0),
+  e("2026-09-17", "Meta Ads", "Tier 1", 4, 4, 1, 1, 3000, 300),
+  e("2026-08-30", "Google Ads", "Tier 3", 5, 2, 0, 0, 0, 500),
 ];
 
 Deno.test("scorecard formulas", () => {
@@ -56,12 +56,12 @@ Deno.test("amber conversion flag above 40% and the pricing signal", () => {
   assertEquals(conversionFlag(0.41, 10)?.note, "Above 40%: test a price increase");
   assertEquals(conversionFlag(0.4, 10), null);
   assertEquals(pricingSignal(totals([], "2026-09-01", "2026-09-30")).text, "No leads logged yet this month");
-  const hot = totals([e("2026-09-02", "Meta Ads", "Media", 7, 7, 5, 4, 12000, 0)], "2026-09-01", "2026-09-30");
+  const hot = totals([e("2026-09-02", "Meta Ads", "Tier 2", 7, 7, 5, 4, 12000, 0)], "2026-09-01", "2026-09-30");
   assertEquals(pricingSignal(hot).level, "warning");
 });
 
 Deno.test("clients: months active and revenue to date match DATEDIF formulas", () => {
-  const c = { name: "Harbourside Realty", service_line: "Digital & Brand", start_date: "2026-01-15", monthly_fee: 4500, end_date: null };
+  const c = { name: "Harbourside Realty", tier: "Tier 1", start_date: "2026-01-15", monthly_fee: 4500, end_date: null };
   assertEquals(wholeMonths("2026-01-15", "2026-09-14"), 7);
   assertEquals(monthsActive(c, "2026-09-15"), 8);
   assertEquals(revenueToDate(c, "2026-09-15"), 4500 * 9);
@@ -69,9 +69,9 @@ Deno.test("clients: months active and revenue to date match DATEDIF formulas", (
 
 Deno.test("trend: active clients, MRR, churn and LTV", () => {
   const clients = [
-    { name: "A", service_line: "Media", start_date: "2026-01-01", monthly_fee: 3000, end_date: null },
-    { name: "B", service_line: "Media", start_date: "2026-02-01", monthly_fee: 3000, end_date: "2026-10-10" },
-    { name: "C", service_line: "Podcast", start_date: "2026-10-05", monthly_fee: 6000, end_date: null },
+    { name: "A", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 3000, end_date: null },
+    { name: "B", tier: "Tier 2", start_date: "2026-02-01", monthly_fee: 3000, end_date: "2026-10-10" },
+    { name: "C", tier: "Tier 3", start_date: "2026-10-05", monthly_fee: 6000, end_date: null },
   ];
   const trend = monthlyTrend(entries, clients, settings, "2026-10-20");
   const sep = trend[0], oct = trend[1];
@@ -94,7 +94,7 @@ Deno.test("channel table for a month", () => {
 });
 
 Deno.test("bottom 30% and price test rotation", () => {
-  const clients = Array.from({ length: 10 }, (_, i) => ({ name: `C${i}`, service_line: "Media", start_date: "2026-01-01", monthly_fee: 2000 + i * 500, end_date: null }));
+  const clients = Array.from({ length: 10 }, (_, i) => ({ name: `C${i}`, tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 2000 + i * 500, end_date: null }));
   assertEquals(bottomThirtyPercent(clients, "2026-09-17").map((c) => c.name), ["C0", "C1", "C2"]);
   assertEquals(nextPriceBand([{ price_band: "current", status: "won" }, { price_band: "high", status: "lost" }]), "mid");
 });
@@ -137,7 +137,7 @@ Deno.test("dashboard pipeline, clients and Meta summaries", () => {
   ], now, "2026-09-17");
   assertEquals(pipeline.pending, 1);
   assertEquals(pipeline.medianResponseMinutes, 10);
-  const summary = clientSummary([{ name: "A", service_line: "Media", start_date: "2026-01-01", monthly_fee: 3000, end_date: null, last_scope_review: null }], "2026-09-17");
+  const summary = clientSummary([{ name: "A", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 3000, end_date: null, last_scope_review: null }], "2026-09-17");
   assertEquals(summary.mrr, 3000);
   assertEquals(summary.overdueScopeReviews.length, 1);
   assertEquals(metaAdsSummary([{ date: "2026-09-17", spend: 100, leads: 2, schedules: 1 }], "2026-09-17").costPerLead, 50);

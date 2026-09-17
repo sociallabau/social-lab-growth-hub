@@ -104,9 +104,8 @@ export type Database = {
           name: string
           notes: string | null
           price_review_status: string
-          service_line: string | null
-          start_date: string | null
           tier: string | null
+          start_date: string | null
           updated_at: string
         }
         Insert: {
@@ -120,9 +119,8 @@ export type Database = {
           name: string
           notes?: string | null
           price_review_status?: string
-          service_line?: string | null
-          start_date?: string | null
           tier?: string | null
+          start_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -136,9 +134,8 @@ export type Database = {
           name?: string
           notes?: string | null
           price_review_status?: string
-          service_line?: string | null
-          start_date?: string | null
           tier?: string | null
+          start_date?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -191,7 +188,7 @@ export type Database = {
           new_leads: number
           notes: string | null
           responded_within_30_min: number
-          service_line: string
+          tier: string
           updated_at: string
           value_won_monthly: number
         }
@@ -207,7 +204,7 @@ export type Database = {
           new_leads?: number
           notes?: string | null
           responded_within_30_min?: number
-          service_line: string
+          tier: string
           updated_at?: string
           value_won_monthly?: number
         }
@@ -223,7 +220,7 @@ export type Database = {
           new_leads?: number
           notes?: string | null
           responded_within_30_min?: number
-          service_line?: string
+          tier?: string
           updated_at?: string
           value_won_monthly?: number
         }
@@ -339,7 +336,7 @@ export type Database = {
           received_at: string
           reviewed_at: string | null
           reviewed_by: string | null
-          service_line: string | null
+          tier: string | null
           source: string
           source_ref: string | null
           status: string
@@ -374,7 +371,7 @@ export type Database = {
           received_at?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
-          service_line?: string | null
+          tier?: string | null
           source?: string
           source_ref?: string | null
           status?: string
@@ -409,7 +406,7 @@ export type Database = {
           received_at?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
-          service_line?: string | null
+          tier?: string | null
           source?: string
           source_ref?: string | null
           status?: string
@@ -700,10 +697,9 @@ export type Database = {
           notes: string | null
           price_review_status: string | null
           revenue_to_date: number | null
-          service_line: string | null
+          tier: string | null
           start_date: string | null
           status: string | null
-          tier: string | null
           updated_at: string | null
         }
         Insert: {
@@ -719,10 +715,9 @@ export type Database = {
           notes?: string | null
           price_review_status?: string | null
           revenue_to_date?: never
-          service_line?: string | null
+          tier?: string | null
           start_date?: string | null
           status?: never
-          tier?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -738,10 +733,9 @@ export type Database = {
           notes?: string | null
           price_review_status?: string | null
           revenue_to_date?: never
-          service_line?: string | null
+          tier?: string | null
           start_date?: string | null
           status?: never
-          tier?: string | null
           updated_at?: string | null
         }
         Relationships: [

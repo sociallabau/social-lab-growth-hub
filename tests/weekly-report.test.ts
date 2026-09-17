@@ -16,7 +16,7 @@ const settings: Settings = {
 };
 
 const entry = (date: string, leads: number, responded: number, meetings = 0, wins = 0, value = 0, spend = 0): DailyEntry => ({
-  date, channel: "Meta Ads", service_line: "Media",
+  date, channel: "Meta Ads", tier: "Tier 2",
   new_leads: leads, responded_within_30_min: responded, meetings_held: meetings,
   clients_won: wins, value_won_monthly: value, marketing_spend: spend,
 });
@@ -34,9 +34,9 @@ const base: ReportInput = {
     entry("2026-08-31", 6, 3, 1, 1, 3000, 150),
   ],
   clients: [
-    { name: "Coast Modular", service_line: "Media", start_date: "2025-09-01", monthly_fee: 3000, end_date: null },
-    { name: "Cheap Co", service_line: "Media", start_date: "2026-01-01", monthly_fee: 1500, end_date: null },
-    { name: "Gone Co", service_line: "Media", start_date: "2025-06-01", monthly_fee: 2000, end_date: "2026-09-05" },
+    { name: "Coast Modular", tier: "Tier 2", start_date: "2025-09-01", monthly_fee: 3000, end_date: null },
+    { name: "Cheap Co", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 1500, end_date: null },
+    { name: "Gone Co", tier: "Tier 2", start_date: "2025-06-01", monthly_fee: 2000, end_date: "2026-09-05" },
   ],
   leads: [
     { id: "1", name: "Slow Reply", company: "Waiting Co", status: "new", channel: "Meta Ads", received_at: "2026-09-11T01:00:00Z", first_response_at: null, meeting_at: null },
@@ -104,7 +104,7 @@ Deno.test("reports on the week that just finished", () => {
 Deno.test("html escapes client names", () => {
   const r = buildWeeklyReport({
     ...base,
-    clients: [{ name: "A & B <Realty>", service_line: "Media", start_date: "2026-01-01", monthly_fee: 900, end_date: null }],
+    clients: [{ name: "A & B <Realty>", tier: "Tier 2", start_date: "2026-01-01", monthly_fee: 900, end_date: null }],
   });
   assertStringIncludes(r.html, "A &amp; B &lt;Realty&gt;");
 });

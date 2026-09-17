@@ -15,7 +15,7 @@ import {
 import { responseMinutes } from "../src/lib/metrics.ts";
 
 const draft = (over: Partial<ReturnType<typeof newEnquiryDraft>> = {}) => ({
-  ...newEnquiryDraft("Instagram (organic)", "Media", "09:20"),
+  ...newEnquiryDraft("Instagram (organic)", "Tier 2", "09:20"),
   name: "Jane Smith",
   ...over,
 });
@@ -43,19 +43,19 @@ Deno.test("enquiry validation", () => {
   assertEquals(enquiryError(draft()), null);
   assertEquals(enquiryError(draft({ name: "", company: "" })), "Add a name or a company");
   assertEquals(enquiryError(draft({ channel: "" })), "Choose a channel for each enquiry");
-  assertEquals(enquiryError(draft({ service_line: "" })), "Choose a service line for each enquiry");
+  assertEquals(enquiryError(draft({ tier: "" })), "Choose a tier for each enquiry");
   assertEquals(enquiryError(draft({ time: "9am" })), "Enter the time as hh:mm");
 });
 
 Deno.test("manual leads flow into the day's numbers", () => {
   const leads = [
     {
-      status: "new", channel: "Instagram (organic)", service_line: "Media",
+      status: "new", channel: "Instagram (organic)", tier: "Tier 2",
       received_at: "2026-09-17T09:20:00+10:00", first_response_at: "2026-09-17T09:35:00+10:00",
       meeting_at: null, won_at: null, won_value: null,
     },
     {
-      status: "new", channel: "Instagram (organic)", service_line: "Media",
+      status: "new", channel: "Instagram (organic)", tier: "Tier 2",
       received_at: "2026-09-17T14:00:00+10:00", first_response_at: null,
       meeting_at: null, won_at: null, won_value: null,
     },
@@ -69,7 +69,7 @@ Deno.test("manual leads flow into the day's numbers", () => {
 Deno.test("a win creates the client and lands on the right row", () => {
   const win = {
     lead_id: "lead-1", client_name: " Harbourside Realty ", monthly_fee: 4500,
-    tier: "Tier 2", service_line: "Digital & Brand", channel: "Client referral",
+    tier: "Tier 1", channel: "Client referral",
   };
   assertEquals(winError(win), null);
   assertEquals(winError({ ...win, monthly_fee: 0 }), "Add the monthly fee");
@@ -81,7 +81,7 @@ Deno.test("a win creates the client and lands on the right row", () => {
   assertEquals(client.monthly_fee, 4500);
   assertEquals(client.lead_id, "lead-1");
 
-  const existing = newDraftRow("Client referral", "Digital & Brand");
+  const existing = newDraftRow("Client referral", "Tier 1");
   existing.new_leads = 2;
   const updated = applyWinToRows([existing], win);
   assertEquals(updated.length, 1);

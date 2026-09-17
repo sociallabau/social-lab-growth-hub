@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLeads, type Lead } from "@/hooks/use-data";
 import { HIDDEN_STATUSES } from "@/lib/leads";
-import { filterByService } from "@/lib/metrics";
-import { useServiceLine } from "@/context/service-line";
+import { filterByTier } from "@/lib/metrics";
+import { useTier } from "@/context/tier";
 import { AddLeadDialog } from "./add-lead-dialog";
 import { LeadActionsProvider } from "./lead-actions";
 import { LeadSheet } from "./lead-sheet";
@@ -16,14 +16,14 @@ import { LeadsBoard } from "./leads-board";
 import { LeadsTable } from "./leads-table";
 
 export function LeadsPage() {
-  const { serviceLine } = useServiceLine();
+  const { tier } = useTier();
   const leads = useLeads();
   const [view, setView] = useState<"board" | "table">("board");
   const [openId, setOpenId] = useState<string | null>(null);
 
   const all = leads.data ?? [];
   const pendingCount = all.filter((l) => l.status === "pending").length;
-  const visible = useMemo(() => filterByService(all.filter((l) => !HIDDEN_STATUSES.includes(l.status)), serviceLine), [all, serviceLine]);
+  const visible = useMemo(() => filterByTier(all.filter((l) => !HIDDEN_STATUSES.includes(l.status)), tier), [all, tier]);
   const openLead = visible.find((l) => l.id === openId) ?? null;
 
   function openInbox() {

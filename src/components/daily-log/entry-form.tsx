@@ -21,25 +21,25 @@ const blank = {
   marketing_spend: 0,
 };
 
-export function DailyEntryForm({ defaultServiceLine }: { defaultServiceLine?: string | undefined }) {
+export function DailyEntryForm({ defaultTier }: { defaultTier?: string | undefined }) {
   const lists = useListItems();
   const save = useSaveDailyEntry();
   const [date, setDate] = useState(todayInBrisbane());
   const [channel, setChannel] = useState("");
-  const [serviceLine, setServiceLine] = useState(defaultServiceLine ?? "");
+  const [tier, setTier] = useState(defaultTier ?? "");
   const [numbers, setNumbers] = useState(blank);
   const [notes, setNotes] = useState("");
 
   const set = (key: keyof typeof blank) => (value: number) => setNumbers((n) => ({ ...n, [key]: value }));
 
   async function submit() {
-    const error = rowError({ channel, service_line: serviceLine, ...numbers });
+    const error = rowError({ channel, tier: tier, ...numbers });
     if (error) {
       toast.error(error);
       return;
     }
     try {
-      await save.mutateAsync({ date, channel, service_line: serviceLine, ...numbers, notes: notes || null });
+      await save.mutateAsync({ date, channel, tier: tier, ...numbers, notes: notes || null });
       toast.success("Entry saved");
       setNumbers(blank);
       setNotes("");
@@ -75,13 +75,13 @@ export function DailyEntryForm({ defaultServiceLine }: { defaultServiceLine?: st
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="entry-service">Service line</Label>
-            <Select value={serviceLine} onValueChange={setServiceLine}>
+            <Label htmlFor="entry-service">Tier</Label>
+            <Select value={tier} onValueChange={setTier}>
               <SelectTrigger id="entry-service">
-                <SelectValue placeholder="Choose a service line" />
+                <SelectValue placeholder="Choose a tier" />
               </SelectTrigger>
               <SelectContent>
-                {(lists.data?.service_line ?? []).map((s) => (
+                {(lists.data?.tier ?? []).map((s) => (
                   <SelectItem key={s.id} value={s.value}>
                     {s.value}
                   </SelectItem>
@@ -143,7 +143,7 @@ export function DailyEntryForm({ defaultServiceLine }: { defaultServiceLine?: st
             {save.isPending ? "Saving…" : "Save entry"}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Saving the same date, channel and service line again updates that row.
+            Saving the same date, channel and tier again updates that row.
           </p>
         </div>
       </CardContent>

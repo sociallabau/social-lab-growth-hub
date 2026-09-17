@@ -33,7 +33,6 @@ export const PRICE_REVIEW_OPTIONS = ["none", "planned", "notice given", "accepte
 
 type Draft = {
   name: string;
-  service_line: string;
   tier: string;
   lead_channel: string;
   start_date: string;
@@ -46,7 +45,6 @@ type Draft = {
 
 const emptyDraft: Draft = {
   name: "",
-  service_line: "",
   tier: "",
   lead_channel: "",
   start_date: todayInBrisbane(),
@@ -60,7 +58,6 @@ const emptyDraft: Draft = {
 function toDraft(client: ClientWithStats): Draft {
   return {
     name: client.name ?? "",
-    service_line: client.service_line ?? "",
     tier: client.tier ?? "",
     lead_channel: client.lead_channel ?? "",
     start_date: client.start_date ?? "",
@@ -103,7 +100,6 @@ export function ClientSheet({
     }
     const patch = {
       name: draft.name.trim(),
-      service_line: draft.service_line || null,
       tier: draft.tier || null,
       lead_channel: draft.lead_channel || null,
       start_date: draft.start_date || null,
@@ -170,12 +166,6 @@ export function ClientSheet({
                   onChange={(e) => set("monthly_fee")(e.target.value)}
                 />
               </Field>
-              <ListField
-                label="Service line"
-                value={draft.service_line}
-                onChange={set("service_line")}
-                options={(lists.data?.service_line ?? []).map((i) => i.value)}
-              />
               <ListField
                 label="Tier"
                 value={draft.tier}

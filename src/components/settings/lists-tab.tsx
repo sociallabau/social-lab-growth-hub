@@ -24,7 +24,6 @@ import {
 
 const LISTS: { list: ListName; label: string }[] = [
   { list: "channel", label: "Channels" },
-  { list: "service_line", label: "Service lines" },
   { list: "tier", label: "Tiers" },
   { list: "role", label: "Roles" },
 ];

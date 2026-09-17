@@ -6,7 +6,7 @@ import { useDailyCheckins } from "@/hooks/use-data";
 import { todayInBrisbane } from "@/lib/format";
 import { DailyEntryForm } from "@/components/daily-log/entry-form";
 import { DailyEntriesTable } from "@/components/daily-log/entries-table";
-import { useServiceLine } from "@/context/service-line";
+import { useTier } from "@/context/tier";
 
 export const Route = createFileRoute("/_authenticated/daily-log")({
   head: () => ({
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/daily-log")({
 });
 
 function DailyLogPage() {
-  const { serviceLineFilter } = useServiceLine();
+  const { tierFilter } = useTier();
   const today = todayInBrisbane();
   const checkins = useDailyCheckins({ from: today, to: today });
   const [logOpen, setLogOpen] = useState(false);
@@ -37,9 +37,9 @@ function DailyLogPage() {
 
   return (
     <>
-      <PageHeader title="Daily Log" description="One row per channel per service line per day." />
-      <DailyEntryForm defaultServiceLine={serviceLineFilter} />
-      <DailyEntriesTable serviceLine={serviceLineFilter} />
+      <PageHeader title="Daily Log" description="One row per channel per tier per day." />
+      <DailyEntryForm defaultTier={tierFilter} />
+      <DailyEntriesTable tier={tierFilter} />
       <LogTodayDialog open={logOpen} onOpenChange={setLogOpen} />
     </>
   );

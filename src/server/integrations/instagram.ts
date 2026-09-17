@@ -83,7 +83,7 @@ export async function syncInstagram(db: SupabaseClient): Promise<SyncResult> {
           company: ai.company,
           phone: ai.phone,
           channel: "Instagram (organic)",
-          service_line: ai.service_line,
+          tier: ai.tier,
           subject: "Instagram DM",
           message: text.slice(0, 4000),
           ai_summary: ai.summary,

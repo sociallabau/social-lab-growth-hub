@@ -16,7 +16,7 @@ import {
   checkinStreak,
   clientSummary,
   conversionFlag,
-  filterByService,
+  filterByTier,
   leadTargets,
   metaAdsSummary,
   monthStart,
@@ -41,7 +41,7 @@ import {
   useSettings,
   useToggleChecklistItem,
 } from "@/hooks/use-data";
-import { useServiceLine } from "@/context/service-line";
+import { useTier } from "@/context/tier";
 import { FunnelChart, Sparkline, TrendCharts } from "./dashboard-charts";
 
 function openLogToday() {
@@ -84,7 +84,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChannels }: { month: string; showAllChannels: boolean; onMonthChange: (month: string) => void; onShowAllChannels: (show: boolean) => void }) {
   const today = todayInBrisbane();
-  const { serviceLine } = useServiceLine();
+  const { tier } = useTier();
   const settings = useSettings();
   const entries = useDailyEntries();
   const clients = useClients();
@@ -100,9 +100,9 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
 
   const dashboard = useMemo(() => {
     if (!settings.data) return null;
-    const filteredEntries = filterByService(entries.data ?? [], serviceLine);
-    const filteredClients = filterByService(clients.data ?? [], serviceLine);
-    const filteredLeads = filterByService(leads.data ?? [], serviceLine);
+    const filteredEntries = filterByTier(entries.data ?? [], tier);
+    const filteredClients = filterByTier(clients.data ?? [], tier);
+    const filteredLeads = filterByTier(leads.data ?? [], tier);
     const cards = scorecards(filteredEntries, settings.data, today);
     const targets = leadTargets(settings.data, today);
     const trend = monthlyTrend(filteredEntries, filteredClients, settings.data, today);
@@ -116,7 +116,7 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
       prices: priceTestResults(filteredLeads),
       meta: metaAdsSummary(metaAds.data ?? [], today),
     };
-  }, [settings.data, entries.data, clients.data, leads.data, channels.data, checkins.data, metaAds.data, serviceLine, today, month]);
+  }, [settings.data, entries.data, clients.data, leads.data, channels.data, checkins.data, metaAds.data, tier, today, month]);
 
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Loading dashboard…</div>;
   if (failed || !settings.data || !dashboard) return <div role="alert" className="rounded-lg border border-critical bg-critical-soft p-4 text-sm">The dashboard could not load. {failed?.error?.message}</div>;
@@ -182,7 +182,7 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
       <Section title="Meta Ads this month"><div className="rounded-lg border bg-card p-4"><div className="grid grid-cols-2 gap-5 lg:grid-cols-4"><Stat label="Spend" value={formatMoney(dashboard.meta.spend)} /><Stat label="Leads" value={String(dashboard.meta.leads)} /><Stat label="Cost per lead" value={formatMoney(dashboard.meta.costPerLead)} /><Stat label="Booked calls" value={String(dashboard.meta.schedules)} /></div><div className="mt-4 border-t pt-3"><Sparkline data={dashboard.meta.sparkline} /><p className="text-xs text-muted-foreground">Last sync: {latestMetaRun ? formatDateTime(latestMetaRun.finished_at ?? latestMetaRun.started_at) : "No sync recorded"}</p></div></div></Section>
 
       <Section title="30-day plan"><div className="divide-y overflow-hidden rounded-lg border bg-card">{(checklist.data ?? []).map((item) => <label key={item.id} className="flex cursor-pointer items-center gap-3 p-4"><Checkbox checked={item.done} disabled={toggleChecklist.isPending} onCheckedChange={(checked) => toggleChecklist.mutate({ id: item.id, done: checked === true }, { onError: (error) => toast.error(error.message) })} /><span className={cn("flex-1 text-sm", item.done && "text-muted-foreground line-through")}>{item.title}</span>{item.done && item.done_at ? <span className="text-xs text-muted-foreground">Done {formatDate(item.done_at)}</span> : null}</label>)}</div></Section>
-      <div className="flex justify-end"><Link to="/daily-log" search={serviceLine === "All" ? {} : { service: serviceLine }} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">View daily log <ExternalLink className="size-3" /></Link></div>
+      <div className="flex justify-end"><Link to="/daily-log" search={tier === "All" ? {} : { service: tier }} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">View daily log <ExternalLink className="size-3" /></Link></div>
     </div>
   );
 }

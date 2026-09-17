@@ -42,7 +42,7 @@ type Draft = Pick<
   | "marketing_spend"
 >;
 
-export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undefined }) {
+export function DailyEntriesTable({ tier }: { tier: string | undefined }) {
   const lists = useListItems();
   const entries = useDailyEntries();
   const save = useSaveDailyEntry();
@@ -60,11 +60,11 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
         (!from || e.date >= from) &&
         (!to || e.date <= to) &&
         (channel === ALL || e.channel === channel) &&
-        (!serviceLine || e.service_line === serviceLine),
+        (!tier || e.tier === tier),
     );
-  }, [entries.data, from, to, channel, serviceLine]);
+  }, [entries.data, from, to, channel, tier]);
 
-  const totals = sumRows(rows.map((r) => ({ ...r, channel: r.channel, service_line: r.service_line })));
+  const totals = sumRows(rows.map((r) => ({ ...r, channel: r.channel, tier: r.tier })));
 
   function startEdit(entry: DailyEntry) {
     setEditingId(entry.id);
@@ -80,7 +80,7 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
 
   async function commit(entry: DailyEntry) {
     if (!draft) return;
-    const error = rowError({ channel: entry.channel, service_line: entry.service_line, ...draft });
+    const error = rowError({ channel: entry.channel, tier: entry.tier, ...draft });
     if (error) {
       toast.error(error);
       return;
@@ -90,7 +90,7 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
         id: entry.id,
         date: entry.date,
         channel: entry.channel,
-        service_line: entry.service_line,
+        tier: entry.tier,
         notes: entry.notes,
         ...draft,
       });
@@ -141,7 +141,7 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Channel</TableHead>
-              <TableHead>Service line</TableHead>
+              <TableHead>Tier</TableHead>
               <TableHead className="text-right">Leads</TableHead>
               <TableHead className="text-right">≤30 min</TableHead>
               <TableHead className="text-right">Meetings</TableHead>
@@ -165,7 +165,7 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
                 <TableRow key={entry.id}>
                   <TableCell className="whitespace-nowrap">{formatDate(entry.date)}</TableCell>
                   <TableCell>{entry.channel}</TableCell>
-                  <TableCell>{entry.service_line}</TableCell>
+                  <TableCell>{entry.tier}</TableCell>
                   {editing ? (
                     <>
                       <TableCell className="w-24">
@@ -245,7 +245,7 @@ export function DailyEntriesTable({ serviceLine }: { serviceLine: string | undef
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {formatDate(entry.date)} · {entry.channel} · {entry.service_line}. This cannot be undone.
+                              {formatDate(entry.date)} · {entry.channel} · {entry.tier}. This cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

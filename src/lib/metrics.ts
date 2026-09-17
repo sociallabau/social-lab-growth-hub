@@ -14,7 +14,7 @@ export type ISODate = string; // "YYYY-MM-DD"
 export interface DailyEntry {
   date: ISODate;
   channel: string;
-  service_line: string;
+  tier: string;
   new_leads: number;
   responded_within_30_min: number;
   meetings_held: number;
@@ -26,8 +26,7 @@ export interface DailyEntry {
 export interface Client {
   id?: string;
   name: string;
-  service_line: string | null;
-  tier?: string | null;
+  tier: string | null;
   lead_channel?: string | null;
   start_date: ISODate | null;
   monthly_fee: number | null;
@@ -117,8 +116,8 @@ export interface Totals {
   cac: number;
 }
 
-export function filterByService<T extends { service_line: string | null }>(rows: T[], service: string): T[] {
-  return service === ALL ? rows : rows.filter((r) => r.service_line === service);
+export function filterByTier<T extends { tier: string | null }>(rows: T[], service: string): T[] {
+  return service === ALL ? rows : rows.filter((r) => r.tier === service);
 }
 
 export function totals(entries: DailyEntry[], from: ISODate, to: ISODate, fixedCost = 0): Totals {
