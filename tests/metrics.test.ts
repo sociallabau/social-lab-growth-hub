@@ -1,8 +1,9 @@
 // Run with: deno test tests/
 import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@1";
 import {
-  bottomThirtyPercent, channelTable, conversionFlag, type DailyEntry, monthlyTrend, monthsActive, nextPriceBand,
-  pricingSignal, proratedFixedCost, revenueToDate, scorecards, type Settings, totals, wholeMonths,
+  bottomThirtyPercent, channelTable, checkinCalendar, checkinStreak, clientSummary, conversionFlag, type DailyEntry,
+  metaAdsSummary, monthlyTrend, monthsActive, nextPriceBand, pipelineSummary, pricingSignal, proratedFixedCost,
+  revenueToDate, scorecards, type Settings, targetStatus, totals, wholeMonths,
 } from "../src/lib/metrics.ts";
 import { capacityByRole, headroomByPackage, hoursWorkedPerYear, productionHoursPerMonth } from "../src/lib/capacity.ts";
 import { formatMoney, formatDate, parseAUDate } from "../src/lib/format.ts";
@@ -118,4 +119,26 @@ Deno.test("Australian formats", () => {
   assertEquals(parseAUDate("7/9/2026"), "2026-09-07");
   assertEquals(parseAUDate("31/02/2026"), null);
   assertEquals(formatMoney(4500), "$4,500");
+});
+
+Deno.test("dashboard check-ins and target bands", () => {
+  assertEquals(targetStatus(10, 10), "On target");
+  assertEquals(targetStatus(8, 10), "Close");
+  assertEquals(targetStatus(7, 10), "Off target");
+  assertEquals(checkinStreak(["2026-09-17", "2026-09-16"], "2026-09-17"), 2);
+  assertEquals(checkinCalendar(["2026-09-17"], "2026-09-17", 2)[1].state, "logged");
+});
+
+Deno.test("dashboard pipeline, clients and Meta summaries", () => {
+  const now = new Date("2026-09-17T02:00:00Z");
+  const pipeline = pipelineSummary([
+    { status: "pending", received_at: "2026-09-17T00:00:00Z", first_response_at: null, meeting_at: null },
+    { status: "new", received_at: "2026-09-17T00:00:00Z", first_response_at: "2026-09-17T00:10:00Z", meeting_at: null },
+  ], now, "2026-09-17");
+  assertEquals(pipeline.pending, 1);
+  assertEquals(pipeline.medianResponseMinutes, 10);
+  const summary = clientSummary([{ name: "A", service_line: "Media", start_date: "2026-01-01", monthly_fee: 3000, end_date: null, last_scope_review: null }], "2026-09-17");
+  assertEquals(summary.mrr, 3000);
+  assertEquals(summary.overdueScopeReviews.length, 1);
+  assertEquals(metaAdsSummary([{ date: "2026-09-17", spend: 100, leads: 2, schedules: 1 }], "2026-09-17").costPerLead, 50);
 });
