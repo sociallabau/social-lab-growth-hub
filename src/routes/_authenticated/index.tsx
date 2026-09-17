@@ -1,16 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
-import { zodValidator } from "@tanstack/zod-adapter";
 import { PageHeader } from "@/components/shell/page-header";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { todayInBrisbane } from "@/lib/metrics";
 
 export const Route = createFileRoute("/_authenticated/")({
-  validateSearch: zodValidator(z.object({
-    service: z.string().optional(),
-    month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
-    allChannels: z.boolean().optional(),
-  })),
+  validateSearch: (search: Record<string, unknown>) => ({
+    service: typeof search["service"] === "string" ? search["service"] : undefined,
+    month: typeof search["month"] === "string" && /^\d{4}-\d{2}$/.test(search["month"]) ? search["month"] : undefined,
+    allChannels: search["allChannels"] === true ? true : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Dashboard — Social Lab Growth Hub" },

@@ -326,7 +326,7 @@ export function bottomThirtyPercent<T extends Client>(clients: T[], today: ISODa
 }
 
 export interface PriceBandLead {
-  price_band: "current" | "mid" | "high" | null;
+  price_band: string | null;
   status: string;
   won_value?: number | null;
 }
