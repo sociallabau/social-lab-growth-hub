@@ -20,6 +20,7 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiCalendlyRegisterRouteImport } from './routes/api/calendly/register'
 import { Route as ApiCalendlyWebhookRouteImport } from './routes/api/calendly/webhook'
+import { Route as ApiReportsWeeklyRouteImport } from './routes/api/reports/weekly'
 import { Route as ApiSyncEmailRouteImport } from './routes/api/sync/email'
 import { Route as ApiSyncInstagramRouteImport } from './routes/api/sync/instagram'
 import { Route as ApiSyncMetaAdsRouteImport } from './routes/api/sync/meta-ads'
@@ -78,6 +79,11 @@ const ApiCalendlyWebhookRoute = ApiCalendlyWebhookRouteImport.update({
   path: '/api/calendly/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportsWeeklyRoute = ApiReportsWeeklyRouteImport.update({
+  id: '/api/reports/weekly',
+  path: '/api/reports/weekly',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSyncEmailRoute = ApiSyncEmailRouteImport.update({
   id: '/api/sync/email',
   path: '/api/sync/email',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/calendly/webhook': typeof ApiCalendlyWebhookRoute
+  '/api/reports/weekly': typeof ApiReportsWeeklyRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
   '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/calendly/webhook': typeof ApiCalendlyWebhookRoute
+  '/api/reports/weekly': typeof ApiReportsWeeklyRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
   '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/calendly/webhook': typeof ApiCalendlyWebhookRoute
+  '/api/reports/weekly': typeof ApiReportsWeeklyRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
   '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/calendly/register'
     | '/api/calendly/webhook'
+    | '/api/reports/weekly'
     | '/api/sync/email'
     | '/api/sync/instagram'
     | '/api/sync/meta-ads'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/calendly/register'
     | '/api/calendly/webhook'
+    | '/api/reports/weekly'
     | '/api/sync/email'
     | '/api/sync/instagram'
     | '/api/sync/meta-ads'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/api/calendly/register'
     | '/api/calendly/webhook'
+    | '/api/reports/weekly'
     | '/api/sync/email'
     | '/api/sync/instagram'
     | '/api/sync/meta-ads'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiCalendlyRegisterRoute: typeof ApiCalendlyRegisterRoute
   ApiCalendlyWebhookRoute: typeof ApiCalendlyWebhookRoute
+  ApiReportsWeeklyRoute: typeof ApiReportsWeeklyRoute
   ApiSyncEmailRoute: typeof ApiSyncEmailRoute
   ApiSyncInstagramRoute: typeof ApiSyncInstagramRoute
   ApiSyncMetaAdsRoute: typeof ApiSyncMetaAdsRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCalendlyWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/weekly': {
+      id: '/api/reports/weekly'
+      path: '/api/reports/weekly'
+      fullPath: '/api/reports/weekly'
+      preLoaderRoute: typeof ApiReportsWeeklyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sync/email': {
       id: '/api/sync/email'
       path: '/api/sync/email'
@@ -331,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ApiCalendlyRegisterRoute: ApiCalendlyRegisterRoute,
   ApiCalendlyWebhookRoute: ApiCalendlyWebhookRoute,
+  ApiReportsWeeklyRoute: ApiReportsWeeklyRoute,
   ApiSyncEmailRoute: ApiSyncEmailRoute,
   ApiSyncInstagramRoute: ApiSyncInstagramRoute,
   ApiSyncMetaAdsRoute: ApiSyncMetaAdsRoute,

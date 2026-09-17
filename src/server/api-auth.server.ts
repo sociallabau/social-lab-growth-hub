@@ -26,6 +26,13 @@ async function isTeamMember(request: Request) {
   return !member.error && member.data === true;
 }
 
+/** Returns a 401 Response when the caller is neither a scheduled run nor a team member. */
+export async function authorizeReport(request: Request): Promise<Response | null> {
+  if (await isCronRequest(request)) return null;
+  if (await isTeamMember(request)) return null;
+  return Response.json({ ok: false, error: "Not authorised" }, { status: 401 });
+}
+
 /** Wraps an integration handler: auth, then a JSON result the UI can show. */
 export async function runIntegration(
   request: Request,
