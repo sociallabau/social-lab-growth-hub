@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   KeyRound,
+  DollarSign,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +33,7 @@ import { useTier } from "@/context/tier";
 import { TierFilter } from "@/components/shell/tier-filter";
 import { ChangePasswordDialog } from "@/components/shell/change-password-dialog";
 import { LogTodayDialog } from "@/components/log-today/log-today-dialog";
+import { LogSpendDialog } from "@/components/ad-spend/log-spend-dialog";
 import { useDailyCheckin } from "@/hooks/use-data";
 import { todayInBrisbane, TIME_ZONE } from "@/lib/format";
 
@@ -60,6 +62,7 @@ export function AppShell({
   const queryClient = useQueryClient();
   const search = tier === "All" ? {} : { service: tier };
   const [logOpen, setLogOpen] = useState(false);
+  const [spendOpen, setSpendOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const today = todayInBrisbane();
   const checkin = useDailyCheckin(today);
@@ -140,6 +143,11 @@ export function AppShell({
               <span className="hidden sm:inline">{logged ? "Logged" : "Log today"}</span>
               <span className="sr-only sm:hidden">{logged ? "Logged" : "Log today"}</span>
             </Button>
+            <Button variant="outline" onClick={() => setSpendOpen(true)} className="gap-1.5">
+              <DollarSign className="size-4" aria-hidden="true" />
+              <span className="hidden md:inline">Log ad spend</span>
+              <span className="sr-only md:hidden">Log ad spend</span>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -181,6 +189,7 @@ export function AppShell({
       </div>
 
       <LogTodayDialog open={logOpen} onOpenChange={setLogOpen} />
+      <LogSpendDialog open={spendOpen} onOpenChange={setSpendOpen} />
       <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
 
       {/* Mobile bottom tabs */}
