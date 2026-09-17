@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, CalendarClock, CheckCircle2, Eye, Instagram, Mail, Megaphone, RefreshCw, Send, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,13 @@ export function IntegrationsTab() {
 /** The Monday summary: preview it in a new tab, or send it to the team now. */
 function WeeklyEmailCard({ runs, loading }: { runs: IntegrationRun[]; loading: boolean }) {
   const send = useRunIntegration();
+  const sendToMe = useRunIntegration();
   const [previewing, setPreviewing] = useState(false);
+  const [myEmail, setMyEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? null));
+  }, []);
 
   const preview = async () => {
     setPreviewing(true);
@@ -89,6 +95,20 @@ function WeeklyEmailCard({ runs, loading }: { runs: IntegrationRun[]; loading: b
             {previewing ? "Building…" : "Preview this week"}
           </Button>
           <Button
+            variant="outline"
+            disabled={!myEmail || sendToMe.isPending}
+            className="gap-1.5"
+            onClick={() =>
+              sendToMe.mutate(`/api/reports/weekly?to=${encodeURIComponent(myEmail ?? "")}`, {
+                onSuccess: (data) => toast.success(data.message),
+                onError: (error) => toast.error(error.message),
+              })
+            }
+          >
+            <Send className="size-4" aria-hidden="true" />
+            {sendToMe.isPending ? "Sending…" : "Send a test to me"}
+          </Button>
+          <Button
             onClick={() =>
               send.mutate("/api/reports/weekly", {
                 onSuccess: (data) => toast.success(data.message),
@@ -99,7 +119,7 @@ function WeeklyEmailCard({ runs, loading }: { runs: IntegrationRun[]; loading: b
             className="gap-1.5"
           >
             <Send className="size-4" aria-hidden="true" />
-            {send.isPending ? "Sending…" : "Send now"}
+            {send.isPending ? "Sending…" : "Send to the team"}
           </Button>
         </div>
         <RunList runs={runs} loading={loading} />

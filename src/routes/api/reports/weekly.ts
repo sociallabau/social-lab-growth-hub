@@ -10,7 +10,11 @@ export const Route = createFileRoute("/api/reports/weekly")({
         const url = new URL(request.url);
         const preview = url.searchParams.get("preview") === "1";
         const week = url.searchParams.get("week");
-        const weekOption = week ? { weekStart: week } : {};
+        const to = url.searchParams.get("to");
+        const weekOption = {
+          ...(week ? { weekStart: week } : {}),
+          ...(to ? { to: to.split(",") } : {}),
+        };
 
         if (preview) {
           const { authorizeReport } = await import("@/server/api-auth.server");

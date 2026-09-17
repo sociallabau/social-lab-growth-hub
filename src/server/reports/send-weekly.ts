@@ -41,7 +41,11 @@ export async function buildWeekly(db: SupabaseClient, options: WeeklyOptions = {
     appUrl: process.env["APP_URL"]?.trim() ?? "",
   });
 
-  const recipients = options.to ?? (teamRes.data ?? []).map((t) => t.email as string);
+  const team = (teamRes.data ?? []).map((t) => (t.email as string).toLowerCase());
+  // A caller can narrow the recipients for a test send, but only to people on the team
+  const requested = options.to?.map((email) => email.trim().toLowerCase()).filter(Boolean);
+  const recipients = requested?.length ? requested.filter((email) => team.includes(email)) : team;
+  if (requested?.length && !recipients.length) throw new Error("Those addresses are not on the team list");
   return { report, recipients, weekStart, weekEnd };
 }
 
