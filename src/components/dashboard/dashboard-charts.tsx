@@ -109,9 +109,9 @@ export function FunnelChart({ data }: { data: Array<{ stage: string; count: numb
   return (
     <ChartContainer config={chartConfig} className="h-56 w-full aspect-auto">
       <BarChart data={data} layout="vertical" margin={{ left: 24, right: 8, top: 0, bottom: 0 }}>
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="var(--chart-grid)" />
         <XAxis type="number" hide />
-        <YAxis dataKey="stage" type="category" tickLine={false} axisLine={false} width={96} tickFormatter={(value) => String(value).replace("_", " ")} />
+        <YAxis dataKey="stage" type="category" tickLine={false} axisLine={false} width={96} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickFormatter={(value) => String(value).replace("_", " ")} />
         <ChartTooltip content={<ChartTooltipContent hideLabel hideIndicator />} />
         <Bar dataKey="count" fill="var(--color-value)" radius={[0, 4, 4, 0]} />
       </BarChart>
