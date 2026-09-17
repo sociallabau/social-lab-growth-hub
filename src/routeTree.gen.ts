@@ -18,8 +18,10 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDailyLogRouteImport } from './routes/_authenticated/daily-log'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as ApiCalendlyRegisterRouteImport } from './routes/api/calendly/register'
 import { Route as ApiSyncEmailRouteImport } from './routes/api/sync/email'
 import { Route as ApiSyncInstagramRouteImport } from './routes/api/sync/instagram'
+import { Route as ApiSyncMetaAdsRouteImport } from './routes/api/sync/meta-ads'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -65,6 +67,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiCalendlyRegisterRoute = ApiCalendlyRegisterRouteImport.update({
+  id: '/api/calendly/register',
+  path: '/api/calendly/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSyncEmailRoute = ApiSyncEmailRouteImport.update({
   id: '/api/sync/email',
   path: '/api/sync/email',
@@ -73,6 +80,11 @@ const ApiSyncEmailRoute = ApiSyncEmailRouteImport.update({
 const ApiSyncInstagramRoute = ApiSyncInstagramRouteImport.update({
   id: '/api/sync/instagram',
   path: '/api/sync/instagram',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSyncMetaAdsRoute = ApiSyncMetaAdsRouteImport.update({
+  id: '/api/sync/meta-ads',
+  path: '/api/sync/meta-ads',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -85,8 +97,10 @@ export interface FileRoutesByFullPath {
   '/daily-log': typeof AuthenticatedDailyLogRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
+  '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -97,8 +111,10 @@ export interface FileRoutesByTo {
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
+  '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,8 +127,10 @@ export interface FileRoutesById {
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/calendly/register': typeof ApiCalendlyRegisterRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
   '/api/sync/instagram': typeof ApiSyncInstagramRoute
+  '/api/sync/meta-ads': typeof ApiSyncMetaAdsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,8 +143,10 @@ export interface FileRouteTypes {
     | '/daily-log'
     | '/leads'
     | '/settings'
+    | '/api/calendly/register'
     | '/api/sync/email'
     | '/api/sync/instagram'
+    | '/api/sync/meta-ads'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -137,8 +157,10 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/'
+    | '/api/calendly/register'
     | '/api/sync/email'
     | '/api/sync/instagram'
+    | '/api/sync/meta-ads'
   id:
     | '__root__'
     | '/_authenticated'
@@ -150,16 +172,20 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/settings'
     | '/_authenticated/'
+    | '/api/calendly/register'
     | '/api/sync/email'
     | '/api/sync/instagram'
+    | '/api/sync/meta-ads'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiCalendlyRegisterRoute: typeof ApiCalendlyRegisterRoute
   ApiSyncEmailRoute: typeof ApiSyncEmailRoute
   ApiSyncInstagramRoute: typeof ApiSyncInstagramRoute
+  ApiSyncMetaAdsRoute: typeof ApiSyncMetaAdsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -227,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/calendly/register': {
+      id: '/api/calendly/register'
+      path: '/api/calendly/register'
+      fullPath: '/api/calendly/register'
+      preLoaderRoute: typeof ApiCalendlyRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sync/email': {
       id: '/api/sync/email'
       path: '/api/sync/email'
@@ -239,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sync/instagram'
       fullPath: '/api/sync/instagram'
       preLoaderRoute: typeof ApiSyncInstagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sync/meta-ads': {
+      id: '/api/sync/meta-ads'
+      path: '/api/sync/meta-ads'
+      fullPath: '/api/sync/meta-ads'
+      preLoaderRoute: typeof ApiSyncMetaAdsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -269,8 +309,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiCalendlyRegisterRoute: ApiCalendlyRegisterRoute,
   ApiSyncEmailRoute: ApiSyncEmailRoute,
   ApiSyncInstagramRoute: ApiSyncInstagramRoute,
+  ApiSyncMetaAdsRoute: ApiSyncMetaAdsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
