@@ -10,8 +10,8 @@ What's already built and tested in this folder:
 | `src/lib/metrics.ts` | Every dashboard calculation (conversion, speed to lead, AOV, CAC, churn, LTV, LTV:CAC, trends, channel table, pricing signal, bottom 30%, price test) |
 | `src/lib/capacity.ts` | Capacity planner maths from the Team and Capacity Planner tabs |
 | `src/lib/format.ts` | AUD and dd/mm/yyyy formatting |
-| `supabase/functions/*` | Integrations: Calendly bookings, Meta Ads spend and booked calls, Instagram DMs, mail server scanning with AI triage |
-| `tests/` | 12 tests checking the maths against the spreadsheet (`deno test tests/`) |
+| `src/server/integrations/*` | Integrations: mail server scanning with AI triage, Instagram DMs, Meta Ads, Calendly bookings |
+| `tests/` | 18 tests covering the maths, email parsing, Meta actions, Instagram timing and Calendly signatures (`deno task test`) |
 
 ---
 
@@ -170,7 +170,7 @@ Settings page, tabbed:
 1. Assumptions and targets: edit the single settings row (tracking start month, gross margin %, average client lifetime months, fixed monthly acquisition cost, the five targets, the three price points, not-fit resource URL, enquiry owner, planning ceiling, target labour %). Percent fields are shown as % and stored as decimals.
 2. Lists: manage list_items for channel, service line, tier and role. Add, rename, reorder (drag), deactivate. Renaming should warn that past entries keep the old name.
 3. Team: team_members (admins only can add, deactivate or change role).
-4. Integrations: one card each for Email (email-sync), Instagram DMs (instagram-sync), Meta Ads (meta-ads-sync) and Calendly (calendly-webhook). Each shows the last 5 integration_runs (time, ok/failed, items, message) and a "Sync now" button that calls supabase.functions.invoke('<name>'). The Calendly card has a "Register webhook" button that invokes calendly-setup and shows the result. Show a clear message if a secret is missing.
+4. Integrations: one card each for Email, Instagram DMs, Meta Ads and Calendly. Each shows the last 5 integration_runs (time, ok/failed, items, message) and a "Sync now" button that POSTs to its server route (/api/sync/email, /api/sync/instagram, /api/sync/meta-ads). The Calendly card has a "Register webhook" button that POSTs to /api/calendly/register and shows the result. Show the error message returned when a secret is missing.
 
 Capacity page, using src/lib/capacity.ts:
 - Staff table (staff): name, role, location (Australia / Philippines), with optional overrides for hours per week, leave, public holidays, sick days, training days, utilisation (blank uses location_defaults), annual cost and pay rise per year. Show calculated production hours per month and cost per production hour.
@@ -186,11 +186,10 @@ Capacity page, using src/lib/capacity.ts:
 
 ## Integrations setup
 
-Add each value in **Lovable Cloud > Secrets**, then use Settings > Integrations > **Sync now** to test. Once they work, run `supabase/cron.sql` (via a Lovable prompt: "run this SQL") to schedule them.
+Add each value in **Lovable Cloud > Secrets**, then use Settings > Integrations > **Sync now** to test. Prompt 8 sets up the scheduled runs (email and Instagram every 10 minutes, Meta Ads hourly).
 
 | Secret | Where to get it |
 |---|---|
-| `CRON_SECRET` | Any long random string. It's also pasted into cron.sql |
 | `IMAP_HOST`, `IMAP_PORT` (993), `IMAP_USER`, `IMAP_PASSWORD` | Your mail server's IMAP settings for the enquiries mailbox (e.g. mail.sociallab.com.au). Using an app-specific password is best |
 | `IMAP_INBOX` (INBOX), `IMAP_SENT_FOLDER` (Sent, sometimes "INBOX.Sent" or "Sent Items") | Folder names on your server |
 | `EMAIL_IGNORE_DOMAINS` | `sociallab.com.au` (internal mail is skipped) |
@@ -200,6 +199,8 @@ Add each value in **Lovable Cloud > Secrets**, then use Settings > Integrations 
 | `CALENDLY_TOKEN` | Calendly > Integrations > API & Webhooks > Personal access token (needs a paid Calendly plan for webhooks) |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | Any long random string, then press "Register webhook" in Settings |
 | `LOVABLE_API_KEY` | Provided by Lovable Cloud when AI is enabled. Without it, enquiries are triaged by keywords instead |
+
+The scheduled runs authenticate with Lovable's own `LOVABLE_CRON_SECRET`, so there's nothing extra to set for those.
 
 **Getting Meta booked calls into Calendly data:** add `?utm_source=facebook&utm_medium=paid` to the Calendly link in your Meta ads. The webhook reads the UTM and sets the channel to Meta Ads automatically.
 

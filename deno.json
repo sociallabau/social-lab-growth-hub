@@ -1,0 +1,9 @@
+{
+  "//": "Only for running the test suite locally (deno test tests/). The app itself is built by Vite and ignores this file.",
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+  },
+  "tasks": { "test": "deno test --no-check tests/" },
+  "fmt": { "exclude": ["."] },
+  "lint": { "exclude": ["."] }
+}
