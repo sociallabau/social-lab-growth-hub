@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -65,6 +65,12 @@ export function AppShell({
     new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: TIME_ZONE }).format(new Date()),
   );
   const overdue = !logged && brisbaneHour >= 16;
+
+  useEffect(() => {
+    const openLog = () => setLogOpen(true);
+    window.addEventListener("social-lab:open-log-today", openLog);
+    return () => window.removeEventListener("social-lab:open-log-today", openLog);
+  }, []);
 
   async function signOut() {
     await queryClient.cancelQueries();

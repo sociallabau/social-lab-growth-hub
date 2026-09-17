@@ -119,6 +119,16 @@ export const checklistQuery = () =>
       unwrap<ChecklistItem[]>(await supabase.from("checklist_items").select("*").order("sort_order")),
   });
 
+export const dailyCheckinsQuery = (range?: { from: string; to: string }) =>
+  queryOptions({
+    queryKey: [...queryKeys.checkins, range ?? "all"] as const,
+    queryFn: async (): Promise<DailyCheckin[]> => {
+      let q = supabase.from("daily_checkins").select("*").order("date", { ascending: false });
+      if (range) q = q.gte("date", range.from).lte("date", range.to);
+      return unwrap<DailyCheckin[]>(await q);
+    },
+  });
+
 export const staffQuery = () =>
   queryOptions({
     queryKey: queryKeys.staff,
@@ -152,6 +162,7 @@ export const useLeads = () => useQuery(leadsQuery());
 export const useMetaAds = (range?: { from: string; to: string }) => useQuery(metaAdsQuery(range));
 export const useIntegrationRuns = (limit?: number) => useQuery(integrationRunsQuery(limit));
 export const useChecklist = () => useQuery(checklistQuery());
+export const useDailyCheckins = (range?: { from: string; to: string }) => useQuery(dailyCheckinsQuery(range));
 export const useStaff = () => useQuery(staffQuery());
 export const usePackages = () => useQuery(packagesQuery());
 export const useLocationDefaults = () => useQuery(locationDefaultsQuery());
@@ -326,9 +337,10 @@ export function useToggleChecklistItem() {
   const invalidate = useInvalidate([queryKeys.checklist]);
   return useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const user = done ? (await supabase.auth.getUser()).data.user : null;
       const res = await supabase
         .from("checklist_items")
-        .update({ done, done_at: done ? new Date().toISOString() : null })
+        .update({ done, done_by: done ? (user?.id ?? null) : null, done_at: done ? new Date().toISOString() : null })
         .eq("id", id)
         .select()
         .single();

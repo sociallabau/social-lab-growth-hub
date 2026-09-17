@@ -369,3 +369,124 @@ export function median(values: number[]): number | null {
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard summaries
+// ---------------------------------------------------------------------------
+
+export type TargetStatus = "On target" | "Close" | "Off target";
+
+/** Status bands used by the three headline metrics. */
+export function targetStatus(value: number, target: number): TargetStatus {
+  if (target <= 0 || value >= target) return "On target";
+  if (value >= target * 0.8) return "Close";
+  return "Off target";
+}
+
+export interface CheckinDay {
+  date: ISODate;
+  state: "logged" | "missed" | "weekend";
+}
+
+export function checkinCalendar(dates: ISODate[], today: ISODate, days = 14): CheckinDay[] {
+  const logged = new Set(dates);
+  return Array.from({ length: days }, (_, i) => {
+    const date = addDays(today, i - days + 1);
+    const weekday = toUTC(date).getUTCDay();
+    return { date, state: logged.has(date) ? "logged" : weekday === 0 || weekday === 6 ? "weekend" : "missed" };
+  });
+}
+
+export function checkinStreak(dates: ISODate[], today: ISODate): number {
+  const logged = new Set(dates);
+  let cursor = today;
+  let streak = 0;
+  while (cursor >= addDays(today, -365)) {
+    const weekday = toUTC(cursor).getUTCDay();
+    if (weekday === 0 || weekday === 6) {
+      cursor = addDays(cursor, -1);
+      continue;
+    }
+    if (!logged.has(cursor)) break;
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+export interface DashboardLead {
+  status: string;
+  received_at: string;
+  first_response_at: string | null;
+  meeting_at: string | null;
+}
+
+export function pipelineCounts(leads: DashboardLead[]) {
+  const stages = ["new", "contacted", "meeting_booked", "meeting_held", "proposal", "won"] as const;
+  return stages.map((stage) => ({ stage, count: leads.filter((lead) => lead.status === stage).length }));
+}
+
+export function pipelineSummary(leads: DashboardLead[], now: Date, today: ISODate) {
+  const thirtyDaysAgo = addDays(today, -29);
+  const responded = leads
+    .filter((lead) => todayInBrisbane(new Date(lead.received_at)) >= thirtyDaysAgo)
+    .map((lead) => responseMinutes(lead.received_at, lead.first_response_at))
+    .filter((minutes): minutes is number => minutes !== null);
+  return {
+    pending: leads.filter((lead) => lead.status === "pending").length,
+    waiting: leads
+      .filter((lead) => !lead.first_response_at && !["pending", "rejected"].includes(lead.status))
+      .map((lead) => ({ ...lead, minutes: Math.max(0, Math.floor((now.getTime() - new Date(lead.received_at).getTime()) / 60_000)) }))
+      .filter((lead) => lead.minutes > 30)
+      .sort((a, b) => b.minutes - a.minutes),
+    upcoming: leads
+      .filter((lead) => lead.status === "meeting_booked" && !!lead.meeting_at && new Date(lead.meeting_at).getTime() > now.getTime())
+      .sort((a, b) => new Date(a.meeting_at ?? 0).getTime() - new Date(b.meeting_at ?? 0).getTime()),
+    stages: pipelineCounts(leads),
+    medianResponseMinutes: median(responded),
+  };
+}
+
+export function clientSummary<T extends Client & { last_scope_review?: ISODate | null }>(clients: T[], today: ISODate) {
+  const active = clients.filter((client) => isActiveOn(client, today));
+  const mrr = active.reduce((sum, client) => sum + (Number(client.monthly_fee) || 0), 0);
+  return {
+    active,
+    count: active.length,
+    mrr,
+    averageFee: div(mrr, active.length),
+    bottomThirty: bottomThirtyPercent(active, today),
+    overdueScopeReviews: active.filter(
+      (client) => !client.last_scope_review || client.last_scope_review < addDays(today, -90),
+    ),
+  };
+}
+
+export interface MetaAdsRow {
+  date: ISODate;
+  spend: number;
+  leads: number;
+  schedules: number;
+}
+
+export function metaAdsSummary(rows: MetaAdsRow[], today: ISODate) {
+  const month = monthStart(today);
+  const current = rows.filter((row) => row.date >= month && row.date <= today);
+  const spend = current.reduce((sum, row) => sum + Number(row.spend || 0), 0);
+  const leads = current.reduce((sum, row) => sum + Number(row.leads || 0), 0);
+  const schedules = current.reduce((sum, row) => sum + Number(row.schedules || 0), 0);
+  const byDate = new Map<ISODate, number>();
+  for (const row of rows.filter((item) => item.date >= addDays(today, -29) && item.date <= today)) {
+    byDate.set(row.date, (byDate.get(row.date) ?? 0) + Number(row.spend || 0));
+  }
+  return {
+    spend,
+    leads,
+    schedules,
+    costPerLead: div(spend, leads),
+    sparkline: Array.from({ length: 30 }, (_, i) => {
+      const date = addDays(today, i - 29);
+      return { date, spend: byDate.get(date) ?? 0 };
+    }),
+  };
+}
