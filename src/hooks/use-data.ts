@@ -652,13 +652,13 @@ export function useRunIntegration() {
         headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
       });
       const text = await res.text();
-      let body: { ok?: boolean; message?: string; items?: number | undefined } = {};
+      let body: { ok?: boolean; message?: string; error?: string; items?: number | undefined } = {};
       try {
         body = JSON.parse(text) as typeof body;
       } catch {
-        body = { message: text };
+        body = { error: text };
       }
-      if (!res.ok || body.ok === false) throw new Error(body.message || `Failed (${res.status})`);
+      if (!res.ok || body.ok === false) throw new Error(body.error || body.message || `Failed (${res.status})`);
       return { ok: true, message: body.message ?? "Done", items: body.items };
     },
     onSuccess: () => {
