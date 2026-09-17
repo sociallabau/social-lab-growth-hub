@@ -3,8 +3,10 @@ import { PageHeader } from "@/components/shell/page-header";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { todayInBrisbane } from "@/lib/metrics";
 
+type DashboardSearch = { service?: string; month?: string; allChannels?: boolean };
+
 export const Route = createFileRoute("/_authenticated/")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): DashboardSearch => ({
     service: typeof search["service"] === "string" ? search["service"] : undefined,
     month: typeof search["month"] === "string" && /^\d{4}-\d{2}$/.test(search["month"]) ? search["month"] : undefined,
     allChannels: search["allChannels"] === true ? true : undefined,
