@@ -645,14 +645,14 @@ export function useUpdateTeamMember() {
 export function useRunIntegration() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (path: string): Promise<{ ok: boolean; message: string; items?: number }> => {
+    mutationFn: async (path: string): Promise<{ ok: boolean; message: string; items?: number | undefined }> => {
       const { data } = await supabase.auth.getSession();
       const res = await fetch(path, {
         method: "POST",
         headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
       });
       const text = await res.text();
-      let body: { ok?: boolean; message?: string; items?: number } = {};
+      let body: { ok?: boolean; message?: string; items?: number | undefined } = {};
       try {
         body = JSON.parse(text) as typeof body;
       } catch {
