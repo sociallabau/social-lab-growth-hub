@@ -65,7 +65,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
     const active = (clients.data ?? []).filter((c) => c.start_date && !c.end_date);
     return new Set(
       bottomThirtyPercent(
-        active.map((c) => ({ id: c.id ?? "", name: c.name ?? "", start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
+        active.map((c) => ({ id: c.id ?? "", name: c.name ?? "", service_line: c.service_line, start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
         today,
       ).map((c) => c.id),
     );
@@ -130,7 +130,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
                     <TableCell className="font-medium">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {client.name}
-                        {bottomIds.has(client.id) ? (
+                        {bottomIds.has(client.id ?? "") ? (
                           <Badge variant="outline" className="gap-1 text-xs">
                             <TrendingDown aria-hidden className="size-3" /> Bottom 30%
                           </Badge>
