@@ -7,7 +7,8 @@
  * Setup (about 5 minutes, once):
  *  1. Go to script.google.com and choose "New project". Name it "Social Lab Growth Hub mailer".
  *  2. Delete whatever is in the editor and paste this whole file in.
- *  3. Replace SHARED_SECRET below with a long random string, and keep a copy.
+ *  3. Replace the SHARED_SECRET value below with a long random string, and keep a copy.
+ *     Change that one line only: everything else stays as it is.
  *  4. Press Deploy > New deployment > type "Web app".
  *       Execute as: Me
  *       Who has access: Anyone
@@ -23,13 +24,14 @@
  * account, 1,500 on Workspace), which is far more than one weekly email needs.
  */
 
-const SHARED_SECRET = 'replace-me-with-a-long-random-string';
+const PLACEHOLDER = 'replace-me-with-a-long-random-string';
+const SHARED_SECRET = PLACEHOLDER; // <- put your own long random string here
 
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
 
-    if (!SHARED_SECRET || SHARED_SECRET === 'replace-me-with-a-long-random-string') {
+    if (!SHARED_SECRET || SHARED_SECRET === PLACEHOLDER) {
       return json({ ok: false, error: 'Set SHARED_SECRET in the Apps Script first' });
     }
     if (body.secret !== SHARED_SECRET) {
