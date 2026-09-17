@@ -15,6 +15,13 @@
       "when": 1789616824233,
       "tag": "0001_add_tier_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789617627587,
+      "tag": "0002_tier_unique_and_not_null",
+      "breakpoints": true
     }
   ]
 }
