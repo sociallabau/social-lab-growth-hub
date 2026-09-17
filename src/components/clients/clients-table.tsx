@@ -65,7 +65,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
     const active = (clients.data ?? []).filter((c) => c.start_date && !c.end_date);
     return new Set(
       bottomThirtyPercent(
-        active.map((c) => ({ ...c, start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
+        active.map((c) => ({ id: c.id ?? "", start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
         today,
       ).map((c) => c.id),
     );
@@ -135,7 +135,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
                             <TrendingDown aria-hidden className="size-3" /> Bottom 30%
                           </Badge>
                         ) : null}
-                        {!lost && scopeReviewDue(client.last_scope_review, today) ? (
+                        {!lost && scopeReviewDue(client.last_scope_review ?? undefined, today) ? (
                           <Badge variant="outline" className="gap-1 border-warning/50 bg-warning-soft text-xs text-warning-foreground">
                             <Clock aria-hidden className="size-3" /> Review due
                           </Badge>

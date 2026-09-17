@@ -17,10 +17,11 @@ export const Route = createFileRoute("/_authenticated/clients")({
 });
 
 function ClientsPage() {
+  const { serviceLineFilter } = useServiceLine();
   return (
     <>
       <PageHeader title="Clients" description="Fees, tenure, hours and price reviews." />
-      <PlaceholderCard text="The client list will appear here." />
+      <ClientsTable serviceLine={serviceLineFilter} />
     </>
   );
 }
