@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Mail, Instagram, Megaphone, CalendarClock, RefreshCw, XCircle } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Eye, Instagram, Mail, Megaphone, RefreshCw, Send, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { useIntegrationRuns, useRunIntegration, type IntegrationRun } from "@/hooks/use-data";
 import { formatDateTime } from "@/lib/format";
 
@@ -25,16 +26,85 @@ export function IntegrationsTab() {
   const { data: runs = [], isLoading } = useIntegrationRuns(200);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {CARDS.map((card) => (
-        <IntegrationCard
-          key={card.key}
-          def={card}
-          runs={runs.filter((r) => r.integration === card.key).slice(0, 5)}
-          loading={isLoading}
-        />
-      ))}
+    <div className="space-y-4">
+      <WeeklyEmailCard runs={runs.filter((r) => r.integration === "weekly_report").slice(0, 5)} loading={isLoading} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {CARDS.map((card) => (
+          <IntegrationCard
+            key={card.key}
+            def={card}
+            runs={runs.filter((r) => r.integration === card.key).slice(0, 5)}
+            loading={isLoading}
+          />
+        ))}
+      </div>
     </div>
+  );
+}
+
+/** The Monday summary: preview it in a new tab, or send it to the team now. */
+function WeeklyEmailCard({ runs, loading }: { runs: IntegrationRun[]; loading: boolean }) {
+  const send = useRunIntegration();
+  const [previewing, setPreviewing] = useState(false);
+
+  const preview = async () => {
+    setPreviewing(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const res = await fetch("/api/reports/weekly?preview=1", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+      });
+      const html = await res.text();
+      if (!res.ok) throw new Error(html.slice(0, 200));
+      const tab = window.open("", "_blank");
+      if (!tab) {
+        toast.error("Allow pop-ups to see the preview");
+        return;
+      }
+      tab.document.write(html);
+      tab.document.close();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not build the preview");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Send className="size-4" aria-hidden="true" />
+          Monday summary email
+        </CardTitle>
+        <CardDescription>
+          Sent to every active team member at 7am Monday: the week's three numbers, the money, and what needs a person.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={preview} disabled={previewing} className="gap-1.5">
+            <Eye className="size-4" aria-hidden="true" />
+            {previewing ? "Building…" : "Preview this week"}
+          </Button>
+          <Button
+            onClick={() =>
+              send.mutate("/api/reports/weekly", {
+                onSuccess: (data) => toast.success(data.message),
+                onError: (error) => toast.error(error.message),
+              })
+            }
+            disabled={send.isPending}
+            className="gap-1.5"
+          >
+            <Send className="size-4" aria-hidden="true" />
+            {send.isPending ? "Sending…" : "Send now"}
+          </Button>
+        </div>
+        <RunList runs={runs} loading={loading} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -97,37 +167,44 @@ function IntegrationCard({ def, runs, loading }: { def: IntegrationCardDef; runs
           </p>
         ) : null}
 
-        <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Last 5 runs</p>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : runs.length ? (
-            <ul className="space-y-1">
-              {runs.map((r) => (
-                <li key={r.id} className="flex items-start gap-2 rounded-md border border-border px-2 py-1.5 text-sm">
-                  {r.ok === true ? (
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-good" aria-hidden />
-                  ) : r.ok === false ? (
-                    <XCircle className="mt-0.5 size-4 shrink-0 text-critical" aria-hidden />
-                  ) : (
-                    <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  )}
-                  <span className="min-w-0">
-                    <span className="font-medium">{formatDateTime(r.started_at)}</span>
-                    <span className="text-muted-foreground">
-                      {" · "}
-                      {r.ok === true ? "OK" : r.ok === false ? "Failed" : "Running"} · {r.items ?? 0} items
-                    </span>
-                    {r.message ? <span className="block break-words text-muted-foreground">{r.message}</span> : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No runs yet.</p>
-          )}
-        </div>
+        <RunList runs={runs} loading={loading} />
       </CardContent>
     </Card>
+  );
+}
+
+/** The last few runs of an integration, newest first. */
+function RunList({ runs, loading }: { runs: IntegrationRun[]; loading: boolean }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Last 5 runs</p>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : runs.length ? (
+        <ul className="space-y-1">
+          {runs.map((r) => (
+            <li key={r.id} className="flex items-start gap-2 rounded-md border border-border px-2 py-1.5 text-sm">
+              {r.ok === true ? (
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-good" aria-hidden />
+              ) : r.ok === false ? (
+                <XCircle className="mt-0.5 size-4 shrink-0 text-critical" aria-hidden />
+              ) : (
+                <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+              )}
+              <span className="min-w-0">
+                <span className="font-medium">{formatDateTime(r.started_at)}</span>
+                <span className="text-muted-foreground">
+                  {" · "}
+                  {r.ok === true ? "OK" : r.ok === false ? "Failed" : "Running"} · {r.items ?? 0} items
+                </span>
+                {r.message ? <span className="block break-words text-muted-foreground">{r.message}</span> : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">No runs yet.</p>
+      )}
+    </div>
   );
 }
