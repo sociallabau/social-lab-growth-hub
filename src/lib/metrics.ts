@@ -500,7 +500,7 @@ const WEEKS_PER_MONTH = 52 / 12;
 /** Total hours a package plans across every role. */
 export function packageTotalHours(hoursByRole: Record<string, unknown> | null | undefined): number {
   if (!hoursByRole) return 0;
-  return Object.values(hoursByRole).reduce((sum, value) => sum + (Number(value) || 0), 0);
+  return Object.values(hoursByRole).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
 }
 
 /** Amber "Review due" once the last scope review is more than 90 days old. */
