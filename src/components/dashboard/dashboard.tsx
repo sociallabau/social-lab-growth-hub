@@ -59,10 +59,10 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   );
 }
 
-const statusStyle: Record<TargetStatus, { icon: typeof CheckCircle2; className: string }> = {
-  "On target": { icon: CheckCircle2, className: "text-good" },
-  Close: { icon: AlertTriangle, className: "text-warning" },
-  "Off target": { icon: CircleAlert, className: "text-critical" },
+const statusStyle: Record<TargetStatus, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  "On target": { icon: CheckCircle2, className: "text-foreground", label: "On target" },
+  Close: { icon: AlertTriangle, className: "text-foreground/70", label: "Watch" },
+  "Off target": { icon: CircleAlert, className: "text-muted-foreground", label: "Off target" },
 };
 
 function MetricTile({ label, value, target, display, targetDisplay }: { label: string; value: number; target: number; display: string; targetDisplay: string }) {
@@ -70,8 +70,8 @@ function MetricTile({ label, value, target, display, targetDisplay }: { label: s
   const Icon = statusStyle[status].icon;
   return (
     <div className="rounded-lg border bg-card p-5">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-3"><strong className="text-3xl font-semibold tabular-nums">{display}</strong><span className={cn("flex items-center gap-1 text-xs font-medium", statusStyle[status].className)}><Icon className="size-4" />{status}</span></div>
+      <p className="text-label">{label}</p>
+      <div className="mt-2 flex items-end justify-between gap-3"><strong className="text-4xl font-bold tracking-tight tabular-nums">{display}</strong><span className={cn("flex items-center gap-1 text-xs font-medium uppercase tracking-wide", statusStyle[status].className)}><Icon className="size-4" />{statusStyle[status].label}</span></div>
       <Progress value={Math.min(100, target > 0 ? value / target * 100 : 100)} className="mt-4" />
       <p className="mt-2 text-xs text-muted-foreground">Target {targetDisplay}</p>
     </div>
