@@ -191,8 +191,8 @@ export type Database = {
           new_leads: number
           notes: string | null
           responded_within_30_min: number
-          service_line: string
-          tier: string | null
+          service_line: string | null
+          tier: string
           updated_at: string
           value_won_monthly: number
         }
@@ -208,8 +208,8 @@ export type Database = {
           new_leads?: number
           notes?: string | null
           responded_within_30_min?: number
-          service_line: string
-          tier?: string | null
+          service_line?: string | null
+          tier: string
           updated_at?: string
           value_won_monthly?: number
         }
@@ -225,8 +225,8 @@ export type Database = {
           new_leads?: number
           notes?: string | null
           responded_within_30_min?: number
-          service_line?: string
-          tier?: string | null
+          service_line?: string | null
+          tier?: string
           updated_at?: string
           value_won_monthly?: number
         }
