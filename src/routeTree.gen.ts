@@ -19,6 +19,7 @@ import { Route as AuthenticatedDailyLogRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiSyncEmailRouteImport } from './routes/api/sync/email'
+import { Route as ApiSyncInstagramRouteImport } from './routes/api/sync/instagram'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -69,6 +70,11 @@ const ApiSyncEmailRoute = ApiSyncEmailRouteImport.update({
   path: '/api/sync/email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSyncInstagramRoute = ApiSyncInstagramRouteImport.update({
+  id: '/api/sync/instagram',
+  path: '/api/sync/instagram',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
+  '/api/sync/instagram': typeof ApiSyncInstagramRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
+  '/api/sync/instagram': typeof ApiSyncInstagramRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/sync/email': typeof ApiSyncEmailRoute
+  '/api/sync/instagram': typeof ApiSyncInstagramRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/api/sync/email'
+    | '/api/sync/instagram'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/'
     | '/api/sync/email'
+    | '/api/sync/instagram'
   id:
     | '__root__'
     | '/_authenticated'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/'
     | '/api/sync/email'
+    | '/api/sync/instagram'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +159,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiSyncEmailRoute: typeof ApiSyncEmailRoute
+  ApiSyncInstagramRoute: typeof ApiSyncInstagramRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSyncEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sync/instagram': {
+      id: '/api/sync/instagram'
+      path: '/api/sync/instagram'
+      fullPath: '/api/sync/instagram'
+      preLoaderRoute: typeof ApiSyncInstagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiSyncEmailRoute: ApiSyncEmailRoute,
+  ApiSyncInstagramRoute: ApiSyncInstagramRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
