@@ -59,10 +59,10 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   );
 }
 
-const statusStyle: Record<TargetStatus, { icon: typeof CheckCircle2; className: string }> = {
-  "On target": { icon: CheckCircle2, className: "text-good" },
-  Close: { icon: AlertTriangle, className: "text-warning" },
-  "Off target": { icon: CircleAlert, className: "text-critical" },
+const statusStyle: Record<TargetStatus, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  "On target": { icon: CheckCircle2, className: "text-foreground", label: "On target" },
+  Close: { icon: AlertTriangle, className: "text-foreground/70", label: "Watch" },
+  "Off target": { icon: CircleAlert, className: "text-muted-foreground", label: "Off target" },
 };
 
 function MetricTile({ label, value, target, display, targetDisplay }: { label: string; value: number; target: number; display: string; targetDisplay: string }) {
@@ -70,8 +70,8 @@ function MetricTile({ label, value, target, display, targetDisplay }: { label: s
   const Icon = statusStyle[status].icon;
   return (
     <div className="rounded-lg border bg-card p-5">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-3"><strong className="text-3xl font-semibold tabular-nums">{display}</strong><span className={cn("flex items-center gap-1 text-xs font-medium", statusStyle[status].className)}><Icon className="size-4" />{status}</span></div>
+      <p className="text-label">{label}</p>
+      <div className="mt-2 flex items-end justify-between gap-3"><strong className="text-4xl font-bold tracking-tight tabular-nums">{display}</strong><span className={cn("flex items-center gap-1 text-xs font-medium uppercase tracking-wide", statusStyle[status].className)}><Icon className="size-4" />{statusStyle[status].label}</span></div>
       <Progress value={Math.min(100, target > 0 ? value / target * 100 : 100)} className="mt-4" />
       <p className="mt-2 text-xs text-muted-foreground">Target {targetDisplay}</p>
     </div>
@@ -141,7 +141,7 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
     <div className="space-y-10">
       <section className="flex flex-col gap-4 rounded-lg border bg-card p-4 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
-          {dashboard.checkinDays.map((day) => <div key={day.date} title={`${formatDate(day.date)} · ${day.state}`} aria-label={`${formatDate(day.date)} ${day.state}`} className={cn("size-7 shrink-0 rounded-sm border", day.state === "logged" ? "border-good bg-good" : day.state === "weekend" ? "border-muted bg-muted" : "border-critical/40 bg-critical-soft")} />)}
+          {dashboard.checkinDays.map((day) => <div key={day.date} title={`${formatDate(day.date)} · ${day.state}`} aria-label={`${formatDate(day.date)} ${day.state}`} className={cn("size-7 shrink-0 rounded-sm border", day.state === "logged" ? "border-good bg-good" : day.state === "weekend" ? "border-border bg-muted" : "border-foreground/30 bg-transparent")} />)}
         </div>
         <div className="flex items-center justify-between gap-4 lg:justify-end"><div><p className="text-xs text-muted-foreground">Current streak</p><p className="font-semibold">{dashboard.streak} working day{dashboard.streak === 1 ? "" : "s"}</p></div><Button onClick={openLogToday}>Log today</Button></div>
       </section>
@@ -169,7 +169,7 @@ export function Dashboard({ month, showAllChannels, onMonthChange, onShowAllChan
 
       <Section title="Pipeline and speed">
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="space-y-3 rounded-lg border bg-card p-4"><h3 className="font-medium">Needs attention</h3><Button variant="outline" className="w-full justify-between" onClick={openLogToday}><span>Pending inbox</span><strong>{dashboard.pipeline.pending}</strong></Button><div><p className="mb-2 text-sm text-critical"><CircleAlert className="mr-1 inline size-4" />No response after 30 minutes</p>{dashboard.pipeline.waiting.length ? <div className="space-y-1">{dashboard.pipeline.waiting.slice(0,5).map((lead, index) => <div key={`${lead.received_at}-${index}`} className="flex justify-between text-sm"><span>{"name" in lead && lead.name ? String(lead.name) : "Lead"}</span><span className="font-medium text-critical">{lead.minutes} min</span></div>)}</div> : <p className="text-sm text-muted-foreground">Nobody waiting.</p>}</div></div>
+          <div className="space-y-3 rounded-lg border bg-card p-4"><h3 className="font-medium">Needs attention</h3><Button variant="outline" className="w-full justify-between" onClick={openLogToday}><span>Pending inbox</span><strong>{dashboard.pipeline.pending}</strong></Button><div><p className="mb-2 text-sm text-alert"><CircleAlert className="mr-1 inline size-4" />No response after 30 minutes</p>{dashboard.pipeline.waiting.length ? <div className="space-y-1">{dashboard.pipeline.waiting.slice(0,5).map((lead, index) => <div key={`${lead.received_at}-${index}`} className="flex justify-between text-sm"><span>{"name" in lead && lead.name ? String(lead.name) : "Lead"}</span><span className="font-medium text-alert">{lead.minutes} min</span></div>)}</div> : <p className="text-sm text-muted-foreground">Nobody waiting.</p>}</div></div>
           <div className="space-y-3 rounded-lg border bg-card p-4"><h3 className="font-medium">Upcoming Calendly meetings</h3>{dashboard.pipeline.upcoming.length ? dashboard.pipeline.upcoming.slice(0,6).map((lead, index) => <div key={`${lead.meeting_at}-${index}`} className="flex items-start gap-2 text-sm"><Clock3 className="mt-0.5 size-4 text-primary" /><div><p>{"name" in lead && lead.name ? String(lead.name) : "Lead"}</p><p className="text-xs text-muted-foreground">{formatDateTime(lead.meeting_at)}</p></div></div>) : <p className="text-sm text-muted-foreground">No upcoming meetings.</p>}<div className="border-t pt-3"><Stat label="Median response · last 30 days" value={dashboard.pipeline.medianResponseMinutes === null ? "—" : `${Math.round(dashboard.pipeline.medianResponseMinutes)} min`} /></div></div>
           <div className="rounded-lg border bg-card p-4"><h3 className="mb-2 font-medium">Pipeline funnel</h3><FunnelChart data={dashboard.pipeline.stages} /></div>
         </div>

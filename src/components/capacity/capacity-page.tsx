@@ -68,7 +68,7 @@ function StatusBadge({ status }: { status: RoleCapacity["status"] }) {
     );
   if (status.startsWith("Over capacity"))
     return (
-      <Badge className="gap-1 bg-critical-soft text-critical">
+      <Badge className="gap-1 bg-alert-soft text-alert">
         <AlertTriangle className="size-3.5" aria-hidden /> Over capacity
       </Badge>
     );
@@ -264,7 +264,7 @@ export function CapacityPage() {
                             <div
                               className={
                                 r.utilisation > 1
-                                  ? "h-full rounded-full bg-critical"
+                                  ? "h-full rounded-full bg-alert"
                                   : r.utilisation > Number(settings.plan_ceiling)
                                     ? "h-full rounded-full bg-warning"
                                     : "h-full rounded-full bg-good"
@@ -275,7 +275,7 @@ export function CapacityPage() {
                           <span className="tabular-nums text-xs text-muted-foreground">{formatPercent(r.utilisation)}</span>
                         </div>
                       </TableCell>
-                      <TableCell className={`text-right ${r.spareHours < 0 ? "text-critical" : ""}`}>{hours(r.spareHours)}</TableCell>
+                      <TableCell className={`text-right ${r.spareHours < 0 ? "text-alert" : ""}`}>{hours(r.spareHours)}</TableCell>
                       <TableCell className="text-right">{r.extraFteNeeded ? r.extraFteNeeded.toFixed(1) : "—"}</TableCell>
                       <TableCell>
                         <StatusBadge status={r.status} />
@@ -335,7 +335,7 @@ export function CapacityPage() {
                         <TableCell className="font-medium">{m.period}</TableCell>
                         <TableCell className="text-right">{formatMoney(m.monthlyRevenue)}</TableCell>
                         <TableCell className="text-right">{formatMoney(m.monthlyTeamCost)}</TableCell>
-                        <TableCell className={`text-right ${over ? "text-critical" : "text-good"}`}>
+                        <TableCell className={`text-right ${over ? "text-alert" : "text-good"}`}>
                           <span className="inline-flex items-center gap-1">
                             {over ? <AlertTriangle className="size-3.5" aria-hidden /> : <CheckCircle2 className="size-3.5" aria-hidden />}
                             {formatPercent(m.labourPct)}
