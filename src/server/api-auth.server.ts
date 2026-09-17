@@ -1,35 +1,51 @@
-// Verifies that the caller of an /api/sync route is an active Social Lab team
-// member, then hands back the admin client the integrations write with.
+// Auth + error shaping for the integration routes.
+// A request is allowed when it is a scheduled run (cron secret) OR it comes
+// from a signed-in, active Social Lab team member.
 import { createClient } from "@supabase/supabase-js";
 
-export async function requireTeamMember(request: Request) {
+async function isCronRequest(request: Request) {
+  const { authenticateCronRequest } = await import("@/integrations/supabase/cron-auth");
+  const failure = await authenticateCronRequest(request);
+  if (failure === null) return true;
+  // Scheduled jobs in the database call these routes with this shared key.
+  const scheduled = process.env["CRON_SYNC_SECRET"];
+  const token = /^Bearer ([^\s,]+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
+  return Boolean(scheduled && token && token === scheduled);
+}
+
+async function isTeamMember(request: Request) {
   const auth = request.headers.get("Authorization") ?? "";
-  if (!auth.toLowerCase().startsWith("bearer ")) {
-    throw new Response("Sign in first", { status: 401 });
-  }
+  if (!auth.toLowerCase().startsWith("bearer ")) return false;
   const userClient = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: auth } },
   });
   const { data, error } = await userClient.auth.getUser();
-  if (error || !data.user) throw new Response("Sign in first", { status: 401 });
+  if (error || !data.user) return false;
   const member = await userClient.rpc("is_team_member");
-  if (member.error || member.data !== true) {
-    throw new Response("Not on the Social Lab team list", { status: 403 });
-  }
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
+  return !member.error && member.data === true;
 }
 
-/** Wraps an integration handler so missing secrets come back as a readable message. */
-export async function runIntegration(request: Request, fn: (db: Awaited<ReturnType<typeof requireTeamMember>>) => Promise<{ items: number; message: string }>) {
-  try {
-    const db = await requireTeamMember(request);
-    const result = await fn(db);
-    return Response.json({ ok: true, ...result });
-  } catch (error) {
-    if (error instanceof Response) return error;
-    const message = error instanceof Error ? error.message : String(error);
-    return Response.json({ ok: false, message }, { status: 400 });
+/** Wraps an integration handler: auth, then a JSON result the UI can show. */
+export async function runIntegration(
+  request: Request,
+  fn: (db: Awaited<ReturnType<typeof adminClient>>) => Promise<{ items: number; message: string }>,
+) {
+  if (!(await isCronRequest(request)) && !(await isTeamMember(request))) {
+    return Response.json({ ok: false, error: "Not authorised" }, { status: 401 });
   }
+  try {
+    const result = await fn(await adminClient());
+    return Response.json({ ok: true, items: result.items, message: result.message });
+  } catch (error) {
+    const { MissingSecretError } = await import("@/server/integrations/shared");
+    const message = error instanceof Error ? error.message : String(error);
+    const status = error instanceof MissingSecretError ? 400 : 500;
+    return Response.json({ ok: false, error: message }, { status });
+  }
+}
+
+export async function adminClient() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
 }
