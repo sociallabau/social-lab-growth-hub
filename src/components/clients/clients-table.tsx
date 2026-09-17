@@ -65,7 +65,7 @@ export function ClientsTable({ serviceLine }: { serviceLine: string | undefined 
     const active = (clients.data ?? []).filter((c) => c.start_date && !c.end_date);
     return new Set(
       bottomThirtyPercent(
-        active.map((c) => ({ id: c.id ?? "", start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
+        active.map((c) => ({ id: c.id ?? "", name: c.name ?? "", start_date: c.start_date, end_date: c.end_date, monthly_fee: c.monthly_fee })),
         today,
       ).map((c) => c.id),
     );
