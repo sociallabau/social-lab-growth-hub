@@ -44,38 +44,38 @@ export type Database = {
       client_costs: {
         Row: {
           client_id: string
-          filming_hours: number | null
-          filming_rate: number | null
           editing_hours: number | null
           editing_rate: number | null
+          filming_hours: number | null
+          filming_rate: number | null
+          notes: string | null
+          other_cost: number | null
           social_hours: number | null
           social_rate: number | null
-          other_cost: number | null
-          notes: string | null
           updated_at: string
         }
         Insert: {
           client_id: string
-          filming_hours?: number | null
-          filming_rate?: number | null
           editing_hours?: number | null
           editing_rate?: number | null
+          filming_hours?: number | null
+          filming_rate?: number | null
+          notes?: string | null
+          other_cost?: number | null
           social_hours?: number | null
           social_rate?: number | null
-          other_cost?: number | null
-          notes?: string | null
           updated_at?: string
         }
         Update: {
           client_id?: string
-          filming_hours?: number | null
-          filming_rate?: number | null
           editing_hours?: number | null
           editing_rate?: number | null
+          filming_hours?: number | null
+          filming_rate?: number | null
+          notes?: string | null
+          other_cost?: number | null
           social_hours?: number | null
           social_rate?: number | null
-          other_cost?: number | null
-          notes?: string | null
           updated_at?: string
         }
         Relationships: [
