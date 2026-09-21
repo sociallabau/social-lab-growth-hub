@@ -29,6 +29,13 @@
       "when": 1790029983577,
       "tag": "0003_client_costs_and_default_rates",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790030766148,
+      "tag": "0004_add_target_net_margin",
+      "breakpoints": true
     }
   ]
 }
