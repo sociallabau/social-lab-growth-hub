@@ -294,7 +294,7 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     try {
       setSaving(true);
       await saveEntries.mutateAsync(
-        rows.map((r) => ({
+        filled.map((r) => ({
           date,
           channel: r.channel,
           tier: r.tier,
