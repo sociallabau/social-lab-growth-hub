@@ -22,6 +22,13 @@
       "when": 1789617627587,
       "tag": "0002_tier_unique_and_not_null",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790029983577,
+      "tag": "0003_client_costs_and_default_rates",
+      "breakpoints": true
     }
   ]
 }
