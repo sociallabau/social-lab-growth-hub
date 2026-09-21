@@ -333,18 +333,6 @@ export function useAddLeadActivity() {
 
 export type ClientHour = Tables<"client_hours">;
 
-/** Every client's logged hours over a recent window, for the tier economics table. */
-export const recentClientHoursQuery = (days = 28) =>
-  queryOptions({
-    queryKey: ["client_hours", "recent", days] as const,
-    queryFn: async () => {
-      const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
-      return unwrap<ClientHour[]>(await supabase.from("client_hours").select("*").gte("date", since));
-    },
-  });
-
-export const useRecentClientHours = (days?: number) => useQuery(recentClientHoursQuery(days));
-
 export function useSaveClientHours() {
   const invalidate = useInvalidate([queryKeys.clients]);
   return useMutation({
@@ -417,18 +405,6 @@ export function useSaveClientCost() {
   return useMutation({
     mutationFn: async (row: TablesInsert<"client_costs">) => {
       const res = await supabase.from("client_costs").upsert(row, { onConflict: "client_id" }).select().single();
-      if (res.error) throw new Error(res.error.message);
-      return res.data;
-    },
-    onSuccess: invalidate,
-  });
-}
-
-export function useSaveLocationDefaults() {
-  const invalidate = useInvalidate([queryKeys.locationDefaults, queryKeys.staff]);
-  return useMutation({
-    mutationFn: async (row: TablesInsert<"location_defaults">) => {
-      const res = await supabase.from("location_defaults").upsert(row, { onConflict: "location" }).select().single();
       if (res.error) throw new Error(res.error.message);
       return res.data;
     },

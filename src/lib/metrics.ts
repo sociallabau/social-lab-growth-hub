@@ -494,12 +494,6 @@ export function metaAdsSummary(rows: MetaAdsRow[], today: ISODate) {
 
 const WEEKS_PER_MONTH = 52 / 12;
 
-/** Total hours a package plans across every role. */
-export function packageTotalHours(hoursByRole: Record<string, unknown> | null | undefined): number {
-  if (!hoursByRole) return 0;
-  return Object.values(hoursByRole).reduce<number>((sum, value) => sum + (Number(value) || 0), 0);
-}
-
 /**
  * Amber "Review due" once a scope review is more than 90 days old. A client who
  * has never been reviewed is not flagged: the clock starts at the first review,

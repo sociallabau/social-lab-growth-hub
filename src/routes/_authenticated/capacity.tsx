@@ -5,7 +5,7 @@ export const Route = createFileRoute("/_authenticated/capacity")({
   head: () => ({
     meta: [
       { title: "Capacity — Social Lab Growth Hub" },
-      { name: "description", content: "Staff hours, packages, capacity by role and margin outlook." },
+      { name: "description", content: "Net margin per client and tier, team hours and payroll outlook." },
       { property: "og:title", content: "Capacity — Social Lab Growth Hub" },
       { property: "og:description", content: "Capacity planning for the Social Lab team." },
       { name: "robots", content: "noindex" },

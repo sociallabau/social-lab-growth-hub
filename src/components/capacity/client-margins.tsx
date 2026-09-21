@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
   type ClientMargin,
   type CostArea,
   type DefaultRates,
+  type MarginTotals,
   type TierMargin,
 } from "@/lib/client-margins";
 import { clientStatus } from "@/lib/metrics";
@@ -72,6 +73,9 @@ export function ClientMargins({ settings, clients, tiers }: { settings: Settings
   const tierRows = useMemo(() => tierMargins(rows, tiers), [rows, tiers]);
   const totals = useMemo(() => marginTotals(rows), [rows]);
 
+  // Falls back to 50% until the target_net_margin column exists.
+  const target = Number(settings.target_net_margin ?? 0.5);
+
   const ranked = tierRows.filter((t) => t.marginPct !== null && t.costedClients > 0);
   const best = ranked.length > 1 ? ranked[0] : null;
   const worst = ranked.length > 1 ? ranked[ranked.length - 1] : null;
@@ -92,29 +96,7 @@ export function ClientMargins({ settings, clients, tiers }: { settings: Settings
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Tile
-          label="Avg net margin per client"
-          value={totals.costedClients ? formatMoney(totals.avgNetMargin) : "—"}
-          note={totals.marginPct === null ? "Enter client costs below" : `${pct(totals.marginPct)} of revenue`}
-        />
-        <Tile
-          label="Net margin per month"
-          value={totals.costedClients ? formatMoney(totals.netMargin) : "—"}
-          note={`${formatMoney(totals.revenue)} revenue − ${formatMoney(totals.cost)} delivery`}
-        />
-        <Tile
-          label="Most profitable tier"
-          value={best?.tier ?? "—"}
-          note={best ? `${pct(best.marginPct)} margin · ${formatMoney(best.avgNetMargin)} per client` : "Needs two tiers with costs"}
-        />
-        <Tile
-          label="Least profitable tier"
-          value={worst?.tier ?? "—"}
-          note={worst ? `${pct(worst.marginPct)} margin · ${formatMoney(worst.avgNetMargin)} per client` : "Needs two tiers with costs"}
-          alert={!!worst}
-        />
-      </div>
+      <MarginHeadline totals={totals} target={target} />
 
       <Card>
         <CardHeader>
@@ -143,7 +125,7 @@ export function ClientMargins({ settings, clients, tiers }: { settings: Settings
               </TableHeader>
               <TableBody>
                 {tierRows.map((t) => (
-                  <TierRow key={t.tier} row={t} best={t === best} worst={t === worst} />
+                  <TierRow key={t.tier} row={t} best={t === best} worst={t === worst} target={target} />
                 ))}
                 {!tierRows.length ? (
                   <TableRow>
@@ -266,17 +248,43 @@ export function ClientMargins({ settings, clients, tiers }: { settings: Settings
   );
 }
 
-function Tile({ label, value, note, alert }: { label: string; value: string; note: string; alert?: boolean }) {
+/** The one number that matters: net margin across costed clients, against the target. */
+function MarginHeadline({ totals, target }: { totals: MarginTotals; target: number }) {
+  const known = totals.costedClients > 0 && totals.marginPct !== null;
+  const onTrack = known && totals.marginPct! >= target;
   return (
     <div className="rounded-lg border bg-card p-5">
-      <p className="text-label">{label}</p>
-      <strong className={cn("mt-2 block text-3xl font-bold tracking-tight tabular-nums", alert && "text-alert")}>{value}</strong>
-      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+      <p className="text-label">Net margin</p>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <strong className={cn("text-5xl font-bold tracking-tight tabular-nums", known && !onTrack && "text-alert")}>
+          {known ? pct(totals.marginPct) : "—"}
+        </strong>
+        {known ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-sm font-medium uppercase tracking-wide",
+              onTrack ? "text-good" : "text-alert",
+            )}
+          >
+            {onTrack ? <CheckCircle2 className="size-4" aria-hidden /> : <AlertTriangle className="size-4" aria-hidden />}
+            {onTrack ? "On track" : `${Math.round((target - totals.marginPct!) * 100)} pts below target`}
+          </span>
+        ) : null}
+        <span className="text-sm text-muted-foreground">Target {pct(target)} (set in Settings)</span>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {known
+          ? `${formatMoney(totals.netMargin)} a month on ${formatMoney(totals.revenue)} revenue · ${formatMoney(totals.avgNetMargin)} per client`
+          : "Enter hours for each client below to see your margin."}
+        {known && totals.costedClients < totals.clients
+          ? ` · ${totals.clients - totals.costedClients} of ${totals.clients} clients still need costs`
+          : ""}
+      </p>
     </div>
   );
 }
 
-function TierRow({ row, best, worst }: { row: TierMargin; best: boolean; worst: boolean }) {
+function TierRow({ row, best, worst, target }: { row: TierMargin; best: boolean; worst: boolean; target: number }) {
   const costed = row.costedClients > 0;
   const dash = <span className="text-muted-foreground">—</span>;
   return (
@@ -304,7 +312,9 @@ function TierRow({ row, best, worst }: { row: TierMargin; best: boolean; worst: 
       <TableCell className={cn("text-right font-medium", row.avgNetMargin < 0 && "text-alert")}>
         {costed ? formatMoney(row.avgNetMargin) : dash}
       </TableCell>
-      <TableCell className="text-right">{costed ? pct(row.marginPct) : dash}</TableCell>
+      <TableCell className={cn("text-right", row.marginPct !== null && row.marginPct < target && "text-alert")}>
+        {costed ? pct(row.marginPct) : dash}
+      </TableCell>
       <TableCell className="text-right text-muted-foreground">
         {row.lowestMarginPct === null
           ? "—"

@@ -633,6 +633,7 @@ export type Database = {
           target_leads_per_week: number
           target_ltv_cac: number
           target_monthly_revenue: number
+          target_net_margin: number
           target_responded_30: number
           tracking_start_month: string
           updated_at: string
@@ -657,6 +658,7 @@ export type Database = {
           target_leads_per_week?: number
           target_ltv_cac?: number
           target_monthly_revenue?: number
+          target_net_margin?: number
           target_responded_30?: number
           tracking_start_month?: string
           updated_at?: string
@@ -681,6 +683,7 @@ export type Database = {
           target_leads_per_week?: number
           target_ltv_cac?: number
           target_monthly_revenue?: number
+          target_net_margin?: number
           target_responded_30?: number
           tracking_start_month?: string
           updated_at?: string

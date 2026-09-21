@@ -22,11 +22,11 @@ import {
   useDeleteClient,
   useListItems,
   useLogClientHours,
-  usePackages,
+  useClientCosts,
   useUpdateClient,
   type ClientWithStats,
 } from "@/hooks/use-data";
-import { clientHoursSummary, packageTotalHours } from "@/lib/metrics";
+import { clientHoursSummary } from "@/lib/metrics";
 import { formatDate, formatMoney, todayInBrisbane } from "@/lib/format";
 
 export const PRICE_REVIEW_OPTIONS = ["none", "planned", "notice given", "accepted", "transitioning out"] as const;
@@ -312,7 +312,7 @@ function ListField({
 
 function HoursTab({ client }: { client: ClientWithStats }) {
   const hours = useClientHours(client.id ?? null);
-  const packages = usePackages();
+  const costs = useClientCosts();
   const lists = useListItems();
   const log = useLogClientHours();
   const today = todayInBrisbane();
@@ -323,12 +323,12 @@ function HoursTab({ client }: { client: ClientWithStats }) {
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
 
+  // Planned monthly hours are the filming, editing and social hours set on the Capacity page.
   const packageHours = useMemo(() => {
-    const pkg = (packages.data ?? []).find((p) => p.tier === client.tier);
-    if (!pkg) return null;
-    const total = packageTotalHours(pkg.hours_by_role as Record<string, unknown>);
+    const row = (costs.data ?? []).find((c) => c.client_id === client.id);
+    const total = row ? (Number(row.filming_hours) || 0) + (Number(row.editing_hours) || 0) + (Number(row.social_hours) || 0) : 0;
     return total > 0 ? total : null;
-  }, [packages.data, client.tier]);
+  }, [costs.data, client.id]);
 
   const summary = useMemo(
     () => clientHoursSummary(hours.data ?? [], today, client.monthly_fee, packageHours),

@@ -4,7 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useClients, useSettings, useUpdateSettings, type Settings } from "@/hooks/use-data";
+import {
+  useClients,
+  useListValues,
+  usePackages,
+  useSavePackage,
+  useSettings,
+  useUpdateSettings,
+  type Settings,
+} from "@/hooks/use-data";
 import { parseAUDate, todayInBrisbane } from "@/lib/format";
 import { averageTenureMonths, suggestedLifetimeMonths } from "@/lib/metrics";
 
@@ -32,7 +40,8 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   {
     title: "Targets",
     fields: [
-      { key: "target_monthly_revenue", label: "Monthly revenue goal", kind: "money", hint: "Total MRR you are aiming at. Per-tier goals live on the Capacity page." },
+      { key: "target_monthly_revenue", label: "Monthly revenue goal", kind: "money", hint: "Total MRR you are aiming at. Per-tier goals are below." },
+      { key: "target_net_margin", label: "Target net margin", kind: "percent", hint: "Fees less filming, editing and social costs. The Capacity page headline checks against this." },
       { key: "target_leads_per_week", label: "Leads per week", kind: "number" },
       { key: "target_conversion", label: "Conversion", kind: "percent" },
       { key: "target_aov", label: "Average order value", kind: "money" },
@@ -73,7 +82,9 @@ export function AssumptionsTab() {
     if (!settings) return;
     const next: Record<string, string> = {};
     for (const group of GROUPS) {
-      for (const field of group.fields) next[field.key as string] = toInput(settings[field.key], field.kind);
+      for (const field of group.fields) {
+        if (field.key in settings) next[field.key as string] = toInput(settings[field.key], field.kind);
+      }
     }
     setForm(next);
   }, [settings]);
@@ -92,6 +103,7 @@ export function AssumptionsTab() {
     const patch: Record<string, unknown> = {};
     for (const group of GROUPS) {
       for (const field of group.fields) {
+        if (!(field.key in settings)) continue; // column not migrated yet
         const raw = (form[field.key as string] ?? "").trim();
         if (field.kind === "text" || field.kind === "email") {
           patch[field.key as string] = raw || null;
@@ -152,7 +164,7 @@ export function AssumptionsTab() {
               <CardTitle className="text-base">{group.title}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              {group.fields.map((field) => (
+              {group.fields.filter((field) => field.key in settings).map((field) => (
                 <div key={field.key as string} className="space-y-1.5">
                   <Label htmlFor={field.key as string}>
                     {field.label}
@@ -172,6 +184,8 @@ export function AssumptionsTab() {
           </Card>
         ))}
       </div>
+      <TierGoalsCard />
+
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={update.isPending}>
           {update.isPending ? "Saving…" : "Save changes"}
@@ -179,5 +193,51 @@ export function AssumptionsTab() {
         <p className="text-xs text-muted-foreground">Percentages are entered as %, stored as decimals.</p>
       </div>
     </div>
+  );
+}
+
+/** Monthly revenue goal per tier, shown against MRR on the dashboard. Saves on blur. */
+function TierGoalsCard() {
+  const { data: packages = [] } = usePackages();
+  const { data: tiers = [] } = useListValues("tier");
+  const save = useSavePackage();
+
+  const commit = (id: string, current: number | null, raw: string) => {
+    const trimmed = raw.replace(/[$,\s]/g, "");
+    const value = trimmed === "" ? null : Number(trimmed);
+    if (value !== null && (Number.isNaN(value) || value < 0)) {
+      toast.error("Enter a number of 0 or more");
+      return;
+    }
+    if ((current === null ? null : Number(current)) === value) return;
+    save.mutate(
+      { id, patch: { revenue_target: value } },
+      { onSuccess: () => toast.success("Goal saved"), onError: (error) => toast.error(error.message) },
+    );
+  };
+
+  const order = (tier: string) => (tiers.includes(tier) ? tiers.indexOf(tier) : tiers.length);
+  const rows = [...packages].sort((a, b) => order(a.tier) - order(b.tier));
+  if (!rows.length) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Revenue goal by tier ($/month)</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {rows.map((row) => (
+          <div key={row.id} className="space-y-1.5">
+            <Label htmlFor={`goal-${row.id}`}>{row.tier}</Label>
+            <Input
+              id={`goal-${row.id}`}
+              inputMode="decimal"
+              defaultValue={row.revenue_target === null ? "" : String(row.revenue_target)}
+              onBlur={(e) => commit(row.id, row.revenue_target, e.target.value)}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

@@ -5,7 +5,7 @@ import {
   metaAdsSummary, monthlyTrend, monthsActive, nextPriceBand, pipelineSummary, pricingSignal, proratedFixedCost,
   revenueToDate, scorecards, type Settings, targetStatus, totals, wholeMonths,
 } from "../src/lib/metrics.ts";
-import { capacityByRole, headroomByPackage, hoursWorkedPerYear, productionHoursPerMonth } from "../src/lib/capacity.ts";
+import { hoursWorkedPerYear, productionHoursPerMonth } from "../src/lib/capacity.ts";
 import { formatMoney, formatDate, parseAUDate } from "../src/lib/format.ts";
 
 const settings: Settings = {
@@ -100,18 +100,11 @@ Deno.test("bottom 30% and price test rotation", () => {
 });
 
 Deno.test("capacity matches the spreadsheet's Team tab defaults", () => {
-  const au = { location: "Australia", hours_per_week: 38, annual_leave_weeks: 4, public_holidays_days: 11, sick_days: 5, training_days: 5, utilisation: 0.75 };
   const ph = { location: "Philippines", hours_per_week: 40, annual_leave_weeks: 1, public_holidays_days: 18, sick_days: 5, training_days: 5, utilisation: 0.8 };
   const editor = { name: "Editor 1", role: "Editor", location: "Philippines", annual_cost: 28000 };
   // 40*52 - 1*40 - (18+5+5)*40/5 = 1816 hours
   assertEquals(hoursWorkedPerYear(editor, ph), 1816);
   assertAlmostEquals(productionHoursPerMonth(editor, ph), 1816 * 0.8 / 12);
-  const roles = capacityByRole(["Editor", "Videographer"], [editor], [{ tier: "Tier 2", price: 4500, hours_by_role: { Editor: 12, Videographer: 6 } }],
-    { "Tier 2": 8 }, { Australia: au, Philippines: ph }, 0.85);
-  assertEquals(roles[0].requiredHours, 96);
-  assertEquals(roles[0].status, "Room to grow");
-  assertEquals(roles[1].status, "Nobody on the team has this role");
-  assertEquals(headroomByPackage([{ tier: "Tier 2", price: 4500, hours_by_role: { Editor: 12 } }], roles)[0].extraClients, Math.floor((1816 * 0.8 / 12 * 0.85 - 96) / 12));
 });
 
 Deno.test("Australian formats", () => {
