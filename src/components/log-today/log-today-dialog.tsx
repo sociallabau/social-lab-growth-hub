@@ -264,13 +264,26 @@ export function LogTodayDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   const isAuto = (r: DraftRow, field: AutoField) => r.auto.includes(field);
 
   async function save() {
-    const bad = rows.map((r) => rowError(r)).find((m) => m);
+    // Ignore completely untouched rows (e.g. an "Add a row" left blank on a zero-lead day).
+    const filled = rows.filter(
+      (r) =>
+        r.channel ||
+        r.tier ||
+        r.notes.trim() ||
+        r.new_leads > 0 ||
+        r.responded_within_30_min > 0 ||
+        r.meetings_held > 0 ||
+        r.clients_won > 0 ||
+        r.value_won_monthly > 0 ||
+        r.marketing_spend > 0,
+    );
+    const bad = filled.map((r) => rowError(r)).find((m) => m);
     if (bad) {
       toast.error(bad);
       return;
     }
     const seen = new Set<string>();
-    for (const r of rows) {
+    for (const r of filled) {
       const key = `${r.channel}|||${r.tier}`;
       if (seen.has(key)) {
         toast.error(`${r.channel} · ${r.tier} appears twice`);
