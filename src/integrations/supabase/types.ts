@@ -41,6 +41,60 @@ export type Database = {
         }
         Relationships: []
       }
+      client_costs: {
+        Row: {
+          client_id: string
+          filming_hours: number | null
+          filming_rate: number | null
+          editing_hours: number | null
+          editing_rate: number | null
+          social_hours: number | null
+          social_rate: number | null
+          other_cost: number | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          filming_hours?: number | null
+          filming_rate?: number | null
+          editing_hours?: number | null
+          editing_rate?: number | null
+          social_hours?: number | null
+          social_rate?: number | null
+          other_cost?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          filming_hours?: number | null
+          filming_rate?: number | null
+          editing_hours?: number | null
+          editing_rate?: number | null
+          social_hours?: number | null
+          social_rate?: number | null
+          other_cost?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_costs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_costs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_hours: {
         Row: {
           client_id: string
@@ -561,6 +615,9 @@ export type Database = {
       settings: {
         Row: {
           avg_client_lifetime_months: number
+          default_editing_rate: number | null
+          default_filming_rate: number | null
+          default_social_rate: number | null
           enquiry_owner_email: string | null
           fixed_monthly_acquisition_cost: number
           gross_margin: number
@@ -582,6 +639,9 @@ export type Database = {
         }
         Insert: {
           avg_client_lifetime_months?: number
+          default_editing_rate?: number | null
+          default_filming_rate?: number | null
+          default_social_rate?: number | null
           enquiry_owner_email?: string | null
           fixed_monthly_acquisition_cost?: number
           gross_margin?: number
@@ -603,6 +663,9 @@ export type Database = {
         }
         Update: {
           avg_client_lifetime_months?: number
+          default_editing_rate?: number | null
+          default_filming_rate?: number | null
+          default_social_rate?: number | null
           enquiry_owner_email?: string | null
           fixed_monthly_acquisition_cost?: number
           gross_margin?: number

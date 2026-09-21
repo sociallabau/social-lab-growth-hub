@@ -8,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StaffSheet } from "@/components/capacity/staff-sheet";
+import { ClientMargins } from "@/components/capacity/client-margins";
 import {
   useClients,
   useListValues,
-  useRecentClientHours,
   useLocationDefaults,
   usePackages,
   useSaveLocationDefaults,
@@ -24,8 +24,6 @@ import {
 } from "@/hooks/use-data";
 import {
   capacityByRole,
-  tierEconomics,
-  weakestTier,
   headroomByPackage,
   marginOutlook,
   productionHoursPerMonth,
@@ -96,7 +94,6 @@ export function CapacityPage() {
   const { data: clients = [] } = useClients();
   const { data: roles = [] } = useListValues("role");
   const { data: tiers = [] } = useListValues("tier");
-  const { data: recentHours = [] } = useRecentClientHours(28);
 
   const [sheetStaff, setSheetStaff] = useState<StaffRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -134,24 +131,6 @@ export function CapacityPage() {
     [settings, locations.length, roleList, capacityStaff, capacityPackages, activeClientsByTier, defaults],
   );
 
-  const roleCostPerHour = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const r of roleCapacity) map[r.role] = r.costPerHour;
-    return map;
-  }, [roleCapacity]);
-
-  const tierRows = useMemo(
-    () =>
-      tierEconomics(
-        clients.filter((c) => clientStatus(c) === "Active").map((c) => ({ id: c.id, tier: c.tier, monthly_fee: c.monthly_fee })),
-        capacityPackages,
-        recentHours.map((h) => ({ client_id: h.client_id, role: h.role, hours: Number(h.hours) })),
-        roleCostPerHour,
-      ),
-    [clients, capacityPackages, recentHours, roleCostPerHour],
-  );
-  const weakest = useMemo(() => weakestTier(tierRows), [tierRows]);
-
   const headroom = useMemo(() => headroomByPackage(capacityPackages, roleCapacity), [capacityPackages, roleCapacity]);
 
   const priceIncrease = settings && Number(settings.price_point_current) > 0
@@ -170,78 +149,20 @@ export function CapacityPage() {
 
   return (
     <>
-      <PageHeader title="Capacity" description="Team hours, packages and delivery headroom." />
-
-      <p className="mb-6 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-        <span>If a role is over capacity and conversion is above 40%, reprice or tighten scope before you hire.</span>
-      </p>
+      <PageHeader title="Capacity" description="Net margin per client and tier, then team hours and delivery headroom." />
 
       <div className="space-y-6">
-        <Card>
-        <CardHeader>
-          <CardTitle>What each tier earns and costs</CardTitle>
-          <CardDescription>
-            Fees against delivery hours, per tier. Uses logged hours from the last 4 weeks where they exist, and package
-            hours everywhere else.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tier</TableHead>
-                  <TableHead className="text-right">Clients</TableHead>
-                  <TableHead className="text-right">MRR</TableHead>
-                  <TableHead className="text-right">Avg fee</TableHead>
-                  <TableHead className="text-right">Hours / client</TableHead>
-                  <TableHead className="text-right">vs package</TableHead>
-                  <TableHead className="text-right">Delivery cost</TableHead>
-                  <TableHead className="text-right">Margin</TableHead>
-                  <TableHead className="text-right">Revenue / hour</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tierRows.map((row) => (
-                  <TableRow key={row.tier}>
-                    <TableCell className="font-medium">{row.tier}</TableCell>
-                    <TableCell className="text-right">{row.clients}</TableCell>
-                    <TableCell className="text-right">{formatMoney(row.mrr)}</TableCell>
-                    <TableCell className="text-right">{formatMoney(row.averageFee)}</TableCell>
-                    <TableCell className="text-right">
-                      {row.hoursPerClient === null ? "—" : hours(row.hoursPerClient)}
-                      {row.actualHours === null ? <span className="ml-1 text-xs text-muted-foreground">planned</span> : null}
-                    </TableCell>
-                    <TableCell className={`text-right ${(row.overPlanHoursPerClient ?? 0) > 5 ? "text-alert" : ""}`}>
-                      {row.overPlanHoursPerClient === null ? "—" : `${row.overPlanHoursPerClient > 0 ? "+" : ""}${hours(row.overPlanHoursPerClient)}`}
-                    </TableCell>
-                    <TableCell className="text-right">{formatMoney(row.deliveryCost)}</TableCell>
-                    <TableCell className={`text-right ${row.marginPct < 0.4 ? "text-alert" : ""}`}>{formatPercent(row.marginPct)}</TableCell>
-                    <TableCell className="text-right">{row.revenuePerHour === null ? "—" : formatMoney(row.revenuePerHour)}</TableCell>
-                  </TableRow>
-                ))}
-                {tierRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
-                      Add packages and clients to see this.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
-          </div>
-          {weakest ? (
-            <p className="text-sm text-muted-foreground">
-              {weakest.tier} returns the least per delivery hour
-              {weakest.revenuePerHour === null ? "" : ` (${formatMoney(weakest.revenuePerHour)} an hour)`}. Your cheapest
-              tier is often the one eating the most time: check it before hiring.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+        <ClientMargins settings={settings} clients={clients} tiers={tiers.filter((t) => t !== "Unallocated")} />
 
-<Card>
+        <div className="space-y-2 pt-4">
+          <h2 className="text-xl font-semibold">Team capacity</h2>
+          <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>If a role is over capacity and conversion is above 40%, reprice or tighten scope before you hire.</span>
+          </p>
+        </div>
+
+        <Card>
           <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
             <div>
               <CardTitle className="text-base">Team</CardTitle>

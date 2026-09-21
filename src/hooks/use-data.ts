@@ -15,6 +15,7 @@ export type ChecklistItem = Tables<"checklist_items">;
 export type Staff = Tables<"staff">;
 export type Package = Tables<"packages">;
 export type LocationDefault = Tables<"location_defaults">;
+export type ClientCost = Tables<"client_costs">;
 
 export const queryKeys = {
   settings: ["settings"] as const,
@@ -29,6 +30,7 @@ export const queryKeys = {
   packages: ["packages"] as const,
   locationDefaults: ["location_defaults"] as const,
   checkins: ["daily_checkins"] as const,
+  clientCosts: ["client_costs"] as const,
 };
 
 function unwrap<T>({ data, error }: { data: T | null; error: { message: string } | null }): T {
@@ -150,6 +152,13 @@ export const locationDefaultsQuery = () =>
       unwrap<LocationDefault[]>(await supabase.from("location_defaults").select("*").order("location")),
   });
 
+export const clientCostsQuery = () =>
+  queryOptions({
+    queryKey: queryKeys.clientCosts,
+    queryFn: async (): Promise<ClientCost[]> =>
+      unwrap<ClientCost[]>(await supabase.from("client_costs").select("*")),
+  });
+
 // ---------------------------------------------------------------------------
 // Read hooks
 // ---------------------------------------------------------------------------
@@ -166,6 +175,7 @@ export const useDailyCheckins = (range?: { from: string; to: string }) => useQue
 export const useStaff = () => useQuery(staffQuery());
 export const usePackages = () => useQuery(packagesQuery());
 export const useLocationDefaults = () => useQuery(locationDefaultsQuery());
+export const useClientCosts = () => useQuery(clientCostsQuery());
 
 /** Active option values for a dropdown list, e.g. useListValues("channel"). */
 export function useListValues(list: ListName) {
@@ -394,6 +404,19 @@ export function useSavePackage() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"packages"> }) => {
       const res = await supabase.from("packages").update(patch).eq("id", id).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/** Upserts one client's monthly delivery costs on client_id. */
+export function useSaveClientCost() {
+  const invalidate = useInvalidate([queryKeys.clientCosts]);
+  return useMutation({
+    mutationFn: async (row: TablesInsert<"client_costs">) => {
+      const res = await supabase.from("client_costs").upsert(row, { onConflict: "client_id" }).select().single();
       if (res.error) throw new Error(res.error.message);
       return res.data;
     },
