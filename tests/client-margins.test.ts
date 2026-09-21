@@ -79,3 +79,25 @@ Deno.test("a client losing money is always flagged", () => {
   const row = clientMargin({ id: "x", name: "X", tier: "Tier 3", monthly_fee: 1000 }, { client_id: "x", filming_hours: 30 }, defaults);
   assertEquals(flagClient(row, tierMargins([row])).reasons, ["losing money"]);
 });
+
+Deno.test("a 0 is a real 0: ads-only clients with no hours are costed, not blank", () => {
+  const row = clientMargin(
+    { id: "ads", name: "Ads", tier: "Ad Only", monthly_fee: 1500 },
+    { client_id: "ads", filming_hours: 0, editing_hours: 0, social_hours: 0, other_cost: 0 },
+    { filming: null, editing: null, social: null },
+  );
+  assertEquals(row.costed, true);
+  assertEquals(row.totalCost, 0);
+  assertEquals(row.netMargin, 1500);
+  assertEquals(row.marginPct, 1);
+  assertEquals(row.missingRates, []); // no rate needed for zero hours
+  assertEquals(marginTotals([row]).costedClients, 1);
+
+  // A rate typed as 0 is used as 0, not swapped for the default.
+  const free = clientMargin(
+    { id: "f", name: "F", tier: "Tier 1", monthly_fee: 1000 },
+    { client_id: "f", editing_hours: 10, editing_rate: 0 },
+    defaults,
+  );
+  assertEquals(free.costByArea.editing, 0);
+});

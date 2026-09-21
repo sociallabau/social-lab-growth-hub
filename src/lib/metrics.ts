@@ -520,9 +520,7 @@ export function clientHoursSummary(
     .reduce((sum, row) => sum + (Number(row.hours) || 0), 0);
   const hoursPerMonth = (last4Weeks / 4) * WEEKS_PER_MONTH;
   const overByPerWeek =
-    packageHoursPerMonth && packageHoursPerMonth > 0
-      ? (hoursPerMonth - packageHoursPerMonth) / WEEKS_PER_MONTH
-      : 0;
+    packageHoursPerMonth !== null ? (hoursPerMonth - packageHoursPerMonth) / WEEKS_PER_MONTH : 0;
   return {
     last4Weeks,
     hoursPerMonth,

@@ -325,9 +325,10 @@ function HoursTab({ client }: { client: ClientWithStats }) {
 
   // Planned monthly hours are the filming, editing and social hours set on the Capacity page.
   const packageHours = useMemo(() => {
+    // A typed 0 is a real plan (e.g. ads-only clients); only blanks mean "not planned".
     const row = (costs.data ?? []).find((c) => c.client_id === client.id);
-    const total = row ? (Number(row.filming_hours) || 0) + (Number(row.editing_hours) || 0) + (Number(row.social_hours) || 0) : 0;
-    return total > 0 ? total : null;
+    const entered = row ? [row.filming_hours, row.editing_hours, row.social_hours].filter((h) => h !== null) : [];
+    return entered.length ? entered.reduce<number>((sum, h) => sum + Number(h), 0) : null;
   }, [costs.data, client.id]);
 
   const summary = useMemo(
