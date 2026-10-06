@@ -71,3 +71,20 @@ Deno.test("scope reviews only nag once a review has actually happened", async ()
   assertEquals(scopeReviewDue("2026-09-01", "2026-09-17"), false); // reviewed recently
   assertEquals(scopeReviewDue("2026-05-01", "2026-09-17"), true); // over 90 days
 });
+
+Deno.test("the follow-up stage sits between contacted and meeting booked", async () => {
+  const { LEAD_STATUSES, STATUS_LABELS } = await import("../src/lib/leads.ts");
+  const order = [...LEAD_STATUSES];
+  assertEquals(order.indexOf("follow_up"), order.indexOf("contacted") + 1);
+  assertEquals(order.indexOf("follow_up") + 1, order.indexOf("meeting_booked"));
+  assertEquals(STATUS_LABELS["follow_up"], "Needs follow up / email sent");
+
+  const { pipelineSummary } = await import("../src/lib/metrics.ts");
+  const stages = pipelineSummary(
+    [{ status: "follow_up", received_at: "2026-10-06T00:00:00Z", first_response_at: "2026-10-06T00:05:00Z", meeting_at: null }],
+    new Date("2026-10-06T02:00:00Z"),
+    "2026-10-06",
+  ).stages;
+  assertEquals(stages.map((s) => s.stage).includes("follow_up"), true);
+  assertEquals(stages.find((s) => s.stage === "follow_up")?.count, 1);
+});

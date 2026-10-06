@@ -421,7 +421,7 @@ export interface DashboardLead {
 }
 
 export function pipelineCounts(leads: DashboardLead[]) {
-  const stages = ["new", "contacted", "meeting_booked", "meeting_held", "proposal", "won"] as const;
+  const stages = ["new", "contacted", "follow_up", "meeting_booked", "meeting_held", "proposal", "won"] as const;
   return stages.map((stage) => ({ stage, count: leads.filter((lead) => lead.status === stage).length }));
 }
 

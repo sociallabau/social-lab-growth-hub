@@ -3,6 +3,7 @@
 export const LEAD_STATUSES = [
   "new",
   "contacted",
+  "follow_up",
   "meeting_booked",
   "meeting_held",
   "proposal",
@@ -16,6 +17,7 @@ export type LeadStatus = (typeof LEAD_STATUSES)[number];
 export const STATUS_LABELS: Record<string, string> = {
   new: "New",
   contacted: "Contacted",
+  follow_up: "Needs follow up / email sent",
   meeting_booked: "Meeting booked",
   meeting_held: "Meeting held",
   proposal: "Proposal",

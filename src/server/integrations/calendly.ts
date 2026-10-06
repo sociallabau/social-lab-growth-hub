@@ -69,7 +69,7 @@ export async function handleCalendlyEvent(db: SupabaseClient, event: string, pay
     if (existing) {
       const { error } = await db.from("leads").update({
         ...Object.fromEntries(Object.entries(details).filter(([, v]) => v)),
-        status: ["pending", "new", "contacted"].includes(existing.status) ? "meeting_booked" : existing.status,
+        status: ["pending", "new", "contacted", "follow_up"].includes(existing.status) ? "meeting_booked" : existing.status,
       }).eq("id", existing.id);
       if (error) throw error;
     } else {
